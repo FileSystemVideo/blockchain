@@ -1,0 +1,50 @@
+syntax = "proto3";
+package copyright.v1beta1;
+
+import "gogoproto/gogo.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "x/copyright/types";
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+// GenesisState defines the capability module's genesis state.
+message GenesisState {
+    // this line is used by starport scaffolding # genesis/proto/state
+    repeated AccountSpace accountSpace = 1 [(gogoproto.nullable) = false];
+    repeated AccountInvite accountInvite = 2 [(gogoproto.nullable) = false];
+    DeflationInfor deflationInfor =3 [(gogoproto.nullable) = false];
+    repeated InviteRecords inviteRecords =4 [(gogoproto.nullable) = false];
+}
+
+message AccountSpace {
+    string  Account = 1 ;
+	string  SpaceTotal = 2 ;
+}
+
+message AccountInvite {
+    string  Account = 1 ;
+	string  SupAccount = 2 ;
+}
+
+message InviteRecords{
+    string  Account = 1 ;
+    repeated AccountInviteRecord accountInviteRecord  = 2 [(gogoproto.nullable) = false];
+}
+
+message AccountInviteRecord{
+    string Address   = 1;
+    string InviteTime = 2;
+}
+
+message DeflationInfor {
+    string  MinerTotalAmount = 1 ;
+	string  HasMinerAmount = 2 ;
+	string  RemainMinerAmount =3;
+	string  DayMinerAmount =4;
+	string  DayMinerRemain =5;
+    string  SpaceMinerAmount=6;
+    string  SpaceMinerBonus=7;
+    string  DeflationSpaceTotal=8;
+}

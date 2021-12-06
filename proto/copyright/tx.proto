@@ -1,0 +1,393 @@
+syntax = "proto3";
+package copyright.v1beta1;
+
+// this line is used by starport scaffolding # proto/tx/import
+
+import "gogoproto/gogo.proto";
+
+option go_package = "x/copyright/types";
+
+service Msg {
+
+  rpc CreateCopyright(MsgCreateCopyright) returns (MsgEmptyResponse);
+
+  rpc RegisterCopyrightParty(MsgRegisterCopyrightParty) returns (MsgEmptyResponse);
+
+  rpc SpaceMiner(MsgSpaceMiner) returns (MsgEmptyResponse);
+
+  rpc DeflationVote(MsgDeflationVote) returns (MsgEmptyResponse);
+
+  rpc NftTransfer(MsgNftTransfer) returns (MsgEmptyResponse);
+
+  rpc InviteCode(MsgInviteCode) returns (MsgEmptyResponse);
+
+  rpc DistributeCommunityReward(MsgDistributeCommunityReward) returns (MsgEmptyResponse);
+
+  rpc Mortgage(MsgMortgage) returns (MsgEmptyResponse);
+
+  rpc EditorCopyright(MsgEditorCopyright) returns (MsgEmptyResponse);
+
+  rpc DeleteCopyright(MsgDeleteCopyright) returns (MsgEmptyResponse);
+
+  rpc CopyrightBonus(MsgCopyrightBonus) returns (MsgEmptyResponse);
+
+  rpc CopyrightComplain(MsgCopyrightComplain) returns (MsgEmptyResponse);
+
+  rpc ComplainResponse(MsgComplainResponse) returns (MsgEmptyResponse);
+
+  rpc ComplainVote(MsgComplainVote) returns (MsgEmptyResponse);
+
+  rpc AuthorizeAccount(MsgAuthorizeAccount) returns (MsgEmptyResponse);
+
+  rpc Transfer(MsgTransfer) returns (MsgEmptyResponse);
+
+  rpc InviteReward(MsgInviteReward) returns (MsgEmptyResponse);
+
+  rpc SpaceMinerReward(MsgSpaceMinerReward) returns (MsgEmptyResponse);
+
+  rpc CopyrightBonusRear(MsgCopyrightBonusRear) returns (MsgEmptyResponse);
+
+  rpc CopyrightVote(MsgVoteCopyright) returns (MsgEmptyResponse);
+
+  rpc CrossChainOut(MsgCrossChainOut) returns (MsgEmptyResponse);
+
+  rpc CrossChainIn(MsgCrossChainIn) returns (MsgEmptyResponse);
+}
+
+
+message MsgCrossChainOut {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string    send_address               = 1 [(gogoproto.moretags) = "yaml:\"send_address\""];
+  string    to_address                 = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
+  string    coins                      = 3 [(gogoproto.moretags) = "yaml:\"coins\""];
+  string    chain_type                 = 4 [(gogoproto.moretags) = "yaml:\"chain_type\""];
+  string    remark                     = 5 [(gogoproto.moretags) = "yaml:\"remark\""];
+}
+
+
+message MsgCrossChainIn {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string    send_address               = 2 [(gogoproto.moretags) = "yaml:\"send_address\""];
+  string    coins                      = 3 [(gogoproto.moretags) = "yaml:\"coins\""];
+  string    chain_type                 = 4 [(gogoproto.moretags) = "yaml:\"chain_type\""];
+  string    remark                     = 5 [(gogoproto.moretags) = "yaml:\"remark\""];
+}
+
+
+
+message MsgCopyrightBonusRear {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   creator                     = 2 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   offer_account_share                     = 3 [(gogoproto.moretags) = "yaml:\"offer_account_share\""];
+}
+
+
+message MsgDistributeCommunityReward {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   address                     = 1 [(gogoproto.moretags) = "yaml:\"address\""];
+  string   amount                      = 2 [(gogoproto.moretags) = "yaml:\"amount\""];
+}
+
+
+message MsgCreateCopyright {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   price                       = 2 [(gogoproto.moretags) = "yaml:\"price\""];
+
+  string   creator                     = 3 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   resource_type               = 4 [(gogoproto.moretags) = "yaml:\"resource_type\""];
+
+  string   pre_hash                    = 5 [(gogoproto.moretags) = "yaml:\"pre_hash\""];
+
+  string   name                        = 6 [(gogoproto.moretags) = "yaml:\"name\""];
+
+  bytes    files                       = 7 [(gogoproto.moretags) = "yaml:\"files\""];
+
+  int64    size                        = 8 [(gogoproto.moretags) = "yaml:\"size\""];
+
+  int32    create_time                 = 9 [(gogoproto.moretags) = "yaml:\"create_time\""];
+
+  string   password                    = 10 [(gogoproto.moretags) = "yaml:\"password\""];
+
+  string   charge_rate                 = 11 [(gogoproto.moretags) = "yaml:\"charge_rate\""];
+
+  string   ip                          = 12 [(gogoproto.moretags) = "yaml:\"ip\""];
+
+
+  string   origin_data_hash             = 13 [(gogoproto.moretags) = "yaml:\"origin_data_hash\""];
+
+  int64    classify_uid                 = 14 [(gogoproto.moretags) = "yaml:\"classify_uid\""];
+
+  string    ext                 = 15 [(gogoproto.moretags) = "yaml:\"ext\""];
+
+   bytes    linkMap                       = 16 [(gogoproto.moretags) = "yaml:\"link_map\""];
+
+  string   video_hash                    = 17 [(gogoproto.moretags) = "yaml:\"video_hash\""];
+
+  bytes   pic_link_map                    = 18 [(gogoproto.moretags) = "yaml:\"pic_link_map\""];
+}
+
+
+message MsgRegisterCopyrightParty {
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   id                    = 1 [(gogoproto.moretags) = "yaml:\"id\""];
+
+  string   intro                 = 2 [(gogoproto.moretags) = "yaml:\"intro\""];
+
+  string   author               = 3 [(gogoproto.moretags) = "yaml:\"author\""];
+
+  string   creator              = 4 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   ext                  = 6 [(gogoproto.moretags) = "yaml:\"ext\""];
+}
+
+
+message MsgSpaceMiner {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   creator                     = 1 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   deflation_amount            = 2 [(gogoproto.moretags) = "yaml:\"deflation_amount\""];
+
+  string   award_account            = 3 [(gogoproto.moretags) = "yaml:\"award_account\""];
+}
+
+
+message MsgDeflationVote {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   creator                     = 1 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   option                      = 2 [(gogoproto.moretags) = "yaml:\"option\""];
+}
+
+
+
+message MsgNftTransfer {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   from                     = 1 [(gogoproto.moretags) = "yaml:\"from\""];
+
+  string   to                      = 2 [(gogoproto.moretags) = "yaml:\"to\""];
+
+  string   token_id                = 3 [(gogoproto.moretags) = "yaml:\"token_id\""];
+}
+
+message MsgInviteCode {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   Address                     = 1 [(gogoproto.moretags) = "yaml:\"Address\""];
+
+  string   invite_code                 = 2 [(gogoproto.moretags) = "yaml:\"invite_code\""];
+
+  int64   invite_time                  = 3 [(gogoproto.moretags) = "yaml:\"invite_time\""];
+}
+
+
+message MsgMortgage {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  string   mortage_account                     = 1 [(gogoproto.moretags) = "yaml:\"mortage_account\""];
+
+  string   data_hash                   = 2 [(gogoproto.moretags) = "yaml:\"data_hash\""];
+
+  string   copyright_price                  = 3 [(gogoproto.moretags) = "yaml:\"copyright_price\""];
+
+  string   creator                     = 4 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  int64   create_time                     = 5 [(gogoproto.moretags) = "yaml:\"create_time\""];
+
+  string  mortgage_amount                = 6 [(gogoproto.moretags) = "yaml:\"mortgage_amount\""];
+
+  string  offer_account_share                = 7 [(gogoproto.moretags) = "yaml:\"offer_account_share\""];
+
+  string  data_hash_account                = 8 [(gogoproto.moretags) = "yaml:\"data_hash_account\""];
+
+  string   bonus_type                     = 9 [(gogoproto.moretags) = "yaml:\"bonus_type\""];
+}
+
+
+message MsgEditorCopyright {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   price                       = 2 [(gogoproto.moretags) = "yaml:\"price\""];
+
+  string   creator                     = 3 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string   name                        = 4 [(gogoproto.moretags) = "yaml:\"name\""];
+
+  string   charge_rate                 = 5 [(gogoproto.moretags) = "yaml:\"charge_rate\""];
+
+  string   ip                          = 6 [(gogoproto.moretags) = "yaml:\"ip\""];
+
+  string   fee                         = 7 [(gogoproto.moretags) = "yaml:\"fee\""];
+}
+
+
+message MsgDeleteCopyright {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   creator                     = 2 [(gogoproto.moretags) = "yaml:\"creator\""];
+}
+
+
+message MsgCopyrightBonus {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   creator                     = 2 [(gogoproto.moretags) = "yaml:\"creator\""];
+
+  string  data_hash_account                = 3 [(gogoproto.moretags) = "yaml:\"data_hash_account\""];
+
+  string   offer_account_share                     = 4 [(gogoproto.moretags) = "yaml:\"offer_account_share\""];
+
+  string   bonus_type                     = 5 [(gogoproto.moretags) = "yaml:\"bonus_type\""];
+}
+
+
+message MsgCopyrightComplain {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   author                     = 2 [(gogoproto.moretags) = "yaml:\"author\""];
+
+  string  productor                   = 3 [(gogoproto.moretags) = "yaml:\"productor\""];
+
+  string   legal_number               = 4 [(gogoproto.moretags) = "yaml:\"legal_number\""];
+  string   legal_time                 = 5 [(gogoproto.moretags) = "yaml:\"legal_time\""];
+  string   complain_infor             = 6 [(gogoproto.moretags) = "yaml:\"complain_infor\""];
+  string   complain_account           = 7 [(gogoproto.moretags) = "yaml:\"complain_account\""];
+  string   accuse_account             = 8 [(gogoproto.moretags) = "yaml:\"accuse_account\""];
+  string   complain_id             = 9 [(gogoproto.moretags) = "yaml:\"complain_id\""];
+  int64    complain_time             = 10 [(gogoproto.moretags) = "yaml:\"complain_time\""];
+}
+
+
+message MsgComplainResponse {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   datahash                    = 1 [(gogoproto.moretags) = "yaml:\"datahash\""];
+
+  string   remote_ip                     = 2 [(gogoproto.moretags) = "yaml:\"remote_ip\""];
+  string   accuse_infor             = 3 [(gogoproto.moretags) = "yaml:\"accuse_infor\""];
+  string   accuse_account             = 4 [(gogoproto.moretags) = "yaml:\"accuse_account\""];
+  string   complain_id             = 5 [(gogoproto.moretags) = "yaml:\"complain_id\""];
+  int64    response_time             = 6 [(gogoproto.moretags) = "yaml:\"response_time\""];
+  string    status             = 7 [(gogoproto.moretags) = "yaml:\"status\""];
+}
+
+
+message MsgComplainVote {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   vote_account             = 1 [(gogoproto.moretags) = "yaml:\"vote_account\""];
+  string   complain_id             = 2 [(gogoproto.moretags) = "yaml:\"complain_id\""];
+  string   vote_status             = 3 [(gogoproto.moretags) = "yaml:\"vote_status\""];
+  string   vote_power             = 4 [(gogoproto.moretags) = "yaml:\"vote_power\""];
+}
+
+
+message MsgAuthorizeAccount {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   cons_addr             = 1 [(gogoproto.moretags) = "yaml:\"cons_addr\""];
+  string   account             = 2 [(gogoproto.moretags) = "yaml:\"account\""];
+  string   sign             = 3 [(gogoproto.moretags) = "yaml:\"sign\""];
+  string   Message             = 4 [(gogoproto.moretags) = "yaml:\"message\""];
+}
+
+
+message MsgTransfer {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   from_address             = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string   to_address             = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
+  string   coins             = 3 [(gogoproto.moretags) = "yaml:\"coins\""];
+}
+
+
+message MsgInviteReward {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   address             = 1 [(gogoproto.moretags) = "yaml:\"address\""];
+}
+
+message MsgSpaceMinerReward {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   address             = 1 [(gogoproto.moretags) = "yaml:\"address\""];
+}
+
+
+message MsgVoteCopyright {
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+  string   address             = 1 [(gogoproto.moretags) = "yaml:\"address\""];
+  string   data_hash             = 2 [(gogoproto.moretags) = "yaml:\"data_hash\""];
+  string   power             = 3 [(gogoproto.moretags) = "yaml:\"power\""];
+}
+
+
+
+message MsgEmptyResponse {}

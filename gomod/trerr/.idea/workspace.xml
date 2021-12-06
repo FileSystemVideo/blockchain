@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e2376b33-6ee3-483d-8cea-e1e71318dab8" name="Default Changelist" comment="增加注册验证器、修改验证器时的一些错误类型">
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs-http-client@v0.0.5/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs-http-client@v0.0.5/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs-http-client@v0.0.5/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs-http-client@v0.0.5/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs@0.5.0-dev/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/ipfs/go-ipfs@0.5.0-dev/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/ipfs/go-log/v2@v2.0.2/setup.go" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/ipfs/go-log/v2@v2.0.2/setup.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-autonat@v0.1.1/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-core@v0.3.0/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/limiter.go" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-swarm@v0.2.2/limiter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-through@v0.0.1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p-through@v0.0.1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p@v0.5.1/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p@v0.5.1/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p@v0.5.1/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../../github.com/libp2p/go-libp2p@v0.5.1/go.sum" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" path="$PROJECT_DIR$/../../../../../../../soft/go1.14.4" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="ProjectId" id="1eNvjHkXwTDC59vrrYSZmzXkWMS" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunManager">
+    <configuration name="TestErrTr in daima.mobi/util/trerr" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="trerr@v0.0.0" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="daima.mobi/util/trerr" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <framework value="gotest" />
+      <pattern value="^TestErrTr$" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestErrTr in daima.mobi/util/trerr" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="增加错误类型" />
+    <MESSAGE value="增加注册验证器、修改验证器时的一些错误类型" />
+    <option name="LAST_COMMIT_MESSAGE" value="增加注册验证器、修改验证器时的一些错误类型" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+</project>
