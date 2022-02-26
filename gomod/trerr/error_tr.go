@@ -15,12 +15,12 @@ type TrErr struct {
 	ErrMsg string
 }
 
-// 直接输出自定义错误
+// 
 func (tr *TrErr) Error() string {
 	return tr.ErrMsg
 }
 
-// 将原始错误转为自定义错误
+// 
 func (tr *TrErr) DumpError(errMsg string) {
 	if errMsg != "" {
 		r, _ := regexp.Compile(tr.RawMsg)
@@ -41,7 +41,7 @@ func (tr *TrErr) DumpError(errMsg string) {
 
 var trMap = make(map[string]TrErr)
 
-// 新建错误
+// 
 func NewErr(unTrMsg, trMsg string) TrErr {
 	te := TrErr{
 		RawMsg: unTrMsg,

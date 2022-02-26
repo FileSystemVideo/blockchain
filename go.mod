@@ -48,4 +48,6 @@ replace (
 	github.com/ipfs/go-merkledag v0.3.2 => ./../ipfs/vendor/github.com/ipfs/go-merkledag
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+	github.com/tendermint/tendermint v0.34.8 => ./gomod/tendermint@v0.34.8
+	github.com/cosmos/cosmos-sdk v0.42.1 => ./gomod/cosmos-sdk@v0.42.1
 )

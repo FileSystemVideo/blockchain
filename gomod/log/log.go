@@ -28,20 +28,20 @@ func Warn(args ...interface{}) {
 
 func InitLogger(logPath string, isSaveLog bool, logLevel logrus.Level) {
 	Log = logrus.New()
-	// 如果需要保存日志
+	// 
 	if isSaveLog {
 		baseLogPath := path.Join(logPath)
 		writer, err := rotatelogs.New(
 			baseLogPath+".%Y%m%d%H%M",
-			rotatelogs.WithLinkName(baseLogPath),      // 生成软链，指向最新日志文件
-			rotatelogs.WithMaxAge(time.Hour*24*7),     // 文件最大保存时间
-			rotatelogs.WithRotationTime(time.Hour*24), // 日志切割时间间隔
+			rotatelogs.WithLinkName(baseLogPath),      // 
+			rotatelogs.WithMaxAge(time.Hour*24*7),     // 
+			rotatelogs.WithRotationTime(time.Hour*24), // 
 		)
 		if err != nil {
 			panic(err.Error())
 		}
 		lfHook := lfshook.NewHook(lfshook.WriterMap{
-			logrus.DebugLevel: writer, // 为不同级别设置不同的输出目的
+			logrus.DebugLevel: writer, // 
 			logrus.InfoLevel:  writer,
 			logrus.WarnLevel:  writer,
 			logrus.ErrorLevel: writer,
