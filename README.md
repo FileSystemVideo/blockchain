@@ -7,14 +7,14 @@ FSV interstellar video chain
 
 According to the plan of the community, we plan to upgrade FSV interstellar video chain to FSV interstellar video intelligent chain
 
-##What is FSV interstellar video intelligent chain?
+## What is FSV interstellar video intelligent chain?
 
 FSV interstellar video smart chain is a scalable and high-throughput rights proof blockchain, which is fully compatible and interoperable with Ethereum. It is built using the cosmos SDK and runs the consensus engine on the tendermint core.
 
 FSV interstellar video smart chain allows ordinary Ethereum to run application specific blockchain as FSV. This allows developers to have all the required functionality of Ethereum while benefiting from tendermint's POS implementation.
 In addition, because it is built on the cosmos SDK, it will be able to exchange value with other parts of the cosmos ecosystem through the cross block chain communication protocol (IBC).
 
-#Characteristics
+# Characteristics
 The following is an overview of some main functions of FSV interstellar video intelligent chain:
 - Web3 and EVM compatibility
 - High throughput through tendermint core
