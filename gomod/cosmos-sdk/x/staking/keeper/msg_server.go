@@ -7,7 +7,7 @@ import (
 
 	metrics "github.com/armon/go-metrics"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
-
+	types2 "github.com/cosmos/cosmos-sdk/x/bank/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -201,6 +201,14 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 		return nil, err
 	}
 
+	lockFlag := types2.JudgeLockedAccount(msg.DelegatorAddress)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.DelegatorAddress)
+		if !passFlag{
+			return nil,sdkerrors.ErrLockedAccount
+		}
+	}
+
 	bondDenom := k.BondDenom(ctx)
 	if msg.Amount.Denom != bondDenom {
 		return nil, sdkerrors.Wrapf(types.ErrBadDenom, "got %s, expected %s", msg.Amount.Denom, bondDenom)
@@ -317,7 +325,13 @@ func (k msgServer) Undelegate(goCtx context.Context, msg *types.MsgUndelegate) (
 	if err != nil {
 		return nil, err
 	}
-	//
+	lockFlag := types2.JudgeLockedAccount(msg.DelegatorAddress)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.DelegatorAddress)
+		if !passFlag{
+			return nil,sdkerrors.ErrLockedAccount
+		}
+	}
 	delegatorCoin, err := k.GetDelegationFreeze(ctx, delegatorAddress)
 	if err != nil {
 		return nil, err

@@ -6,7 +6,8 @@ import (
 	"strconv"
 
 	"github.com/armon/go-metrics"
-
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	types2 "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -64,6 +65,13 @@ func (k msgServer) Vote(goCtx context.Context, msg *types.MsgVote) (*types.MsgVo
 	accAddr, accErr := sdk.AccAddressFromBech32(msg.Voter)
 	if accErr != nil {
 		return nil, accErr
+	}
+	lockFlag := types2.JudgeLockedAccount(msg.Voter)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.Voter)
+		if !passFlag{
+			return nil,sdkerrors.ErrLockedAccount
+		}
 	}
 	err := k.Keeper.AddVote(ctx, msg.ProposalId, accAddr, msg.Option)
 	if err != nil {
