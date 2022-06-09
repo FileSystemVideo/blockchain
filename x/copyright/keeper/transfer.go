@@ -62,7 +62,8 @@ func (k Keeper) culFee(coins sdk.Coins) (sdk.Coins, error) {
 
 func (k Keeper) Transfer(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, coins sdk.Coins) error {
 
-	lockFlag := types2.JudgeLockedAccount(fromAddress.String())
+	var lockFlag bool
+	lockFlag = types2.JudgeLockedAccount(fromAddress.String())
 	if lockFlag {
 		return sdkerrors.ErrLockedAccount
 	}

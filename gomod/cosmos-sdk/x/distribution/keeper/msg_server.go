@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/armon/go-metrics"
-
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	types2 "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -59,6 +60,13 @@ func (k msgServer) WithdrawDelegatorReward(goCtx context.Context, msg *types.Msg
 	delegatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
 	if err != nil {
 		return nil, err
+	}
+	lockFlag := types2.JudgeLockedAccount(msg.DelegatorAddress)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.DelegatorAddress)
+		if !passFlag{
+			return nil,sdkerrors.ErrLockedAccount
+		}
 	}
 	amount, err := k.WithdrawDelegationRewards(ctx, delegatorAddress, valAddr)
 	if err != nil {

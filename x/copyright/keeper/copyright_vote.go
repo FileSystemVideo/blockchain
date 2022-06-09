@@ -352,7 +352,7 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 				}
 				copyrightVoteInfor[key] = vote
 				totalVote = totalVote.Add(dataVote.Power)
-				award := dataVote.Power.Mul(config.CopyrightVoteAwardRate)
+				award := getVoteAward(ctx,dataVote.Power)
 				copyrightVote := types.CopyrightVote{
 					DataHash:   copyrightHash,
 					VideoHash:  key,
@@ -381,7 +381,7 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 				}
 				copyrightVoteInfor[key] = defaultVote
 				totalVote = totalVote.Add(dataVote.Power)
-				award := dataVote.Power.Mul(config.CopyrightVoteAwardRate)
+				award := getVoteAward(ctx,dataVote.Power)
 				copyrightVote := types.CopyrightVote{
 					DataHash:   copyrightHash,
 					VideoHash:  key,
@@ -441,7 +441,7 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 			logs.Error("format account error", err)
 			return err
 		}
-		award := totalVote.Mul(config.CopyrightVoteAwardRate)
+		award := getVoteAward(ctx,totalVote)
 		awardString := util.DecimalStringFixed(award.String(), config.CoinPlaces)
 		realCoin := types.NewRealCoinFromStr(sdk.DefaultBondDenom, awardString)
 		ledgerCoin := types.MustRealCoin2LedgerCoin(realCoin)
@@ -681,4 +681,10 @@ func fileNameSuffix(fileName string) string {
 		filenameOnly = strings.Replace(fileName, ".", "", -1)
 	}
 	return filenameOnly
+}
+
+func getVoteAward(ctx sdk.Context,power decimal.Decimal)decimal.Decimal{
+	var award decimal.Decimal
+	award = power.Mul(config.CopyrightVoteAwardRate)
+	return award
 }

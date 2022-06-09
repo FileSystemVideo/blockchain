@@ -30,7 +30,13 @@ var (
 
 func (k msgServer) CrossChainOut(goCtx context.Context, msg *types.MsgCrossChainOut) (*types.MsgEmptyResponse, error) {
 	logPrefix := k.logPrefix + " | " + util.GetFuncName()
-	logs.Debug(logPrefix)
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	var lockFlag bool
+	if ctx.BlockHeight()> config.Upgrade20220601Height{
+		lockFlag = types2.JudgeLockedAccount(msg.SendAddress)
+	}else{
+		lockFlag = types2.JudgeLockedAccountOld(msg.SendAddress)
+	}
 
 	lockFlag := types2.JudgeLockedAccount(msg.SendAddress)
 	if lockFlag{
@@ -142,6 +148,13 @@ func (k msgServer) SpaceMinerReward(goCtx context.Context, msg *types.MsgSpaceMi
 		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
+	lockFlag := types2.JudgeLockedAccount(msg.Address)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.Address)
+		if !passFlag{
+			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
+		}
+	}
 	err = k.SpaceMinerRewardSettlement(ctx, address.String())
 	if err != nil {
 		logs.Error(logPrefix, address.String(), ",SpaceMinerRewardSettlement error | ", err.Error())
@@ -157,6 +170,13 @@ func (k msgServer) InviteReward(goCtx context.Context, msg *types.MsgInviteRewar
 	if err != nil {
 		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
+	}
+	lockFlag := types2.JudgeLockedAccount(msg.Address)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.Address)
+		if !passFlag{
+			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
+		}
 	}
 	err = k.RewardSettlement(ctx, address.String())
 	if err != nil {
@@ -306,6 +326,49 @@ func (k msgServer) CopyrightBonus(goCtx context.Context, msg *types.MsgCopyright
 	return &types.MsgEmptyResponse{}, err
 }
 
+
+func (k msgServer) CopyrightBonusV2(goCtx context.Context, msg *types.MsgCopyrightBonusV2) (*types.MsgEmptyResponse, error) {
+	log := util.BuildLog(util.GetFuncName(), util.LmChainMsgServer)
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	creator, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
+		return &types.MsgEmptyResponse{}, err
+	}
+	if ctx.BlockHeight() > config.Upgrade20220601Height{
+		lockFlag := types2.JudgeLockedAccount(msg.Creator)
+		if lockFlag{
+			passFlag := types2.JudgePassedAccount(msg.Creator)
+			if !passFlag{
+				return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
+			}
+		}
+	}
+	dataHashAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
+	if err != nil {
+		log.WithError(err).WithField("DataHashAccount", msg.DataHashAccount).Error("AccAddressFromBech32")
+		return &types.MsgEmptyResponse{}, err
+	}
+
+	data := types.CopyrightBonusData{
+		Downer:            creator,
+		DataHash:          msg.Datahash,
+		OfferAccountShare: msg.OfferAccountShare,
+		HashAccount:       dataHashAccount,
+		BonusType:         msg.BonusType,
+	}
+	data.Fee = types.NewLedgerFee(config.CopyrightFee)
+	err = k.Keeper.CopyrightBonus(ctx, data)
+	if err != nil {
+		return &types.MsgEmptyResponse{}, err
+	}
+	err = k.SetBonusAddress(ctx, msg.BonusAddress, creator.String(), ctx.BlockHeight())
+	if err != nil {
+		log.WithError(err).Error("SetBonusAddress")
+	}
+	return &types.MsgEmptyResponse{}, err
+}
+
 func (k msgServer) CopyrightBonusRear(goCtx context.Context, msg *types.MsgCopyrightBonusRear) (*types.MsgEmptyResponse, error) {
 	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -343,10 +406,13 @@ func (k msgServer) CopyrightVote(goCtx context.Context, msg *types.MsgVoteCopyri
 		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
-	/*lockFlag := types2.JudgeLockedAccount(msg.Address)
+	lockFlag := types2.JudgeLockedAccount(msg.Address)
 	if lockFlag{
-		return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-	}*/
+		passFlag := types2.JudgePassedAccount(msg.Address)
+		if !passFlag{
+			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
+		}
+	}
 
 	if copyrightData.ApproveStatus != 0 {
 		return &types.MsgEmptyResponse{}, types.CopyrightApproveHasFinished
@@ -486,6 +552,13 @@ func (k msgServer) SpaceMiner(goCtx context.Context, msg *types.MsgSpaceMiner) (
 	if err != nil {
 		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
+	}
+	lockFlag := types2.JudgeLockedAccount(msg.Creator)
+	if lockFlag{
+		passFlag := types2.JudgePassedAccount(msg.Creator)
+		if !passFlag{
+			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
+		}
 	}
 	awardAccount, err := sdk.AccAddressFromBech32(msg.AwardAccount)
 	if err != nil {
