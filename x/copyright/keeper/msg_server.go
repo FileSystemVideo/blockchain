@@ -2,14 +2,12 @@ package keeper
 
 import (
 	"context"
-	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
-	"fs.video/blockchain/x/copyright/types"
-	logs "fs.video/log"
 	"errors"
+	"fs.video/blockchain/core"
+	"fs.video/blockchain/util"
+	"fs.video/blockchain/x/copyright/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	types2 "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/shopspring/decimal"
 )
 
@@ -28,47 +26,39 @@ var (
 	_ types.MsgServer = msgServer{}
 )
 
+// fsv->bsc
 func (k msgServer) CrossChainOut(goCtx context.Context, msg *types.MsgCrossChainOut) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName()
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var lockFlag bool
-	if ctx.BlockHeight()> config.Upgrade20220601Height{
-		lockFlag = types2.JudgeLockedAccount(msg.SendAddress)
-	}else{
-		lockFlag = types2.JudgeLockedAccountOld(msg.SendAddress)
-	}
 
-	lockFlag := types2.JudgeLockedAccount(msg.SendAddress)
-	if lockFlag{
-		return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
 	saddress, err := sdk.AccAddressFromBech32(msg.SendAddress)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("SendAddress", msg.SendAddress).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	caddress, err := sdk.AccAddressFromBech32(config.CrossChainAccount)
+	caddress, err := sdk.AccAddressFromBech32(core.CrossChainAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+		log.WithError(err).WithField("CrossChainAccount", core.CrossChainAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
-	faddress, err := sdk.AccAddressFromBech32(config.CrossChainFeeAccount)
+	faddress, err := sdk.AccAddressFromBech32(core.CrossChainFeeAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error3 | ", err.Error())
+		log.WithError(err).WithField("CrossChainFeeAccount", core.CrossChainFeeAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
 	amount, err := util.StringToCoinWithRate(msg.Coins)
 	if err != nil {
-		logs.Error(logPrefix, "StringToCoinWithRate error | ", err.Error())
+		log.WithError(err).WithField("Coins", msg.Coins).Error("StringToCoinWithRate")
 		return &types.MsgEmptyResponse{}, err
 	}
-	if amount.Amount.ToDec().LT(sdk.MustNewDecFromStr(config.CrossChainOutMinAmount)) {
+	
+	if amount.Amount.ToDec().LT(sdk.MustNewDecFromStr(core.CrossChainOutMinAmount)) {
 		return &types.MsgEmptyResponse{}, errors.New("transfer amount is too low")
 	}
+	
+	//lvdb kv,
 	feeRatio, err := k.GetCrossChainOutFeeRatio(ctx)
 	if err != nil {
 		return &types.MsgEmptyResponse{}, err
@@ -77,22 +67,25 @@ func (k msgServer) CrossChainOut(goCtx context.Context, msg *types.MsgCrossChain
 	fee := amount.Amount.ToDec().Mul(sdk.MustNewDecFromStr(feeRatio))
 	err = k.CoinKeeper.SendCoins(ctx, saddress, faddress, sdk.NewCoins(sdk.NewCoin(amount.Denom, fee.TruncateInt())))
 	if err != nil {
-		logs.Error(logPrefix, "SendCoins error1", err.Error())
+		log.WithError(err).Error("SendCoins1")
 		return &types.MsgEmptyResponse{}, err
 	}
+	
+	//err = k.CoinKeeper.SendCoinsFromAccountToModule(ctx, saddress, types.ContractCrossChain, sdk.NewCoins(amount))
 	freezeAmount := amount.Amount.ToDec().Sub(fee)
 	err = k.CoinKeeper.SendCoins(ctx, saddress, caddress, sdk.NewCoins(sdk.NewCoin(amount.Denom, freezeAmount.TruncateInt())))
 	if err != nil {
-		logs.Error(logPrefix, "SendCoins error2", err.Error())
+		log.WithError(err).Error("SendCoins2")
 		return &types.MsgEmptyResponse{}, err
 	}
 
 	_, coinSymbol, err := util.StringDenom(msg.Coins)
 	if err != nil {
-		logs.Error(logPrefix, "StringDenom error | ", err.Error())
+		log.WithError(err).WithField("Coins", msg.Coins).Error("StringDenom")
 		return &types.MsgEmptyResponse{}, err
 	}
 
+	//fmt.Println(":", freezeAmount.TruncateInt().String())
 
 	//event
 	ctx.EventManager().EmitEvent(
@@ -110,23 +103,24 @@ func (k msgServer) CrossChainOut(goCtx context.Context, msg *types.MsgCrossChain
 	return &types.MsgEmptyResponse{}, nil
 }
 
+// bsc->fsv
 func (k msgServer) CrossChainIn(goCtx context.Context, msg *types.MsgCrossChainIn) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName()
-	logs.Debug(logPrefix)
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
+	
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	saddress, err := sdk.AccAddressFromBech32(msg.SendAddress)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err)
+		log.WithError(err).WithField("SendAddress", msg.SendAddress).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	caddress, err := sdk.AccAddressFromBech32(config.CrossChainAccount)
+	caddress, err := sdk.AccAddressFromBech32(core.CrossChainAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err)
+		log.WithError(err).WithField("CrossChainAccount", core.CrossChainAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	amount, err := util.StringToCoinWithRate(msg.Coins)
 	if err != nil {
-		logs.Error(logPrefix, "StringToCoinWithRate error | ", err)
+		log.WithError(err).WithField("Coins", msg.Coins).Error("StringToCoinWithRate")
 		return &types.MsgEmptyResponse{}, err
 	}
 	//err = k.CoinKeeper.SendCoinsFromModuleToAccount(ctx, types.ContractCrossChain, saddress, sdk.NewCoins(amount))
@@ -134,73 +128,65 @@ func (k msgServer) CrossChainIn(goCtx context.Context, msg *types.MsgCrossChainI
 	err = k.CoinKeeper.SendCoins(ctx, caddress, saddress, sdk.NewCoins(amount))
 
 	if err != nil {
-		logs.Error(logPrefix, "SendCoins error |", err)
+		log.WithError(err).Error("SendCoins")
 		return &types.MsgEmptyResponse{}, err
 	}
 	return &types.MsgEmptyResponse{}, nil
 }
 
+
 func (k msgServer) SpaceMinerReward(goCtx context.Context, msg *types.MsgSpaceMinerReward) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	address, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("Address", msg.Address).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	lockFlag := types2.JudgeLockedAccount(msg.Address)
-	if lockFlag{
-		passFlag := types2.JudgePassedAccount(msg.Address)
-		if !passFlag{
-			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-		}
-	}
+
+	
 	err = k.SpaceMinerRewardSettlement(ctx, address.String())
 	if err != nil {
-		logs.Error(logPrefix, address.String(), ",SpaceMinerRewardSettlement error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
 	return &types.MsgEmptyResponse{}, err
 }
+
 
 func (k msgServer) InviteReward(goCtx context.Context, msg *types.MsgInviteReward) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	return &types.MsgEmptyResponse{}, nil
 	address, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("Address", msg.Address).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	lockFlag := types2.JudgeLockedAccount(msg.Address)
-	if lockFlag{
-		passFlag := types2.JudgePassedAccount(msg.Address)
-		if !passFlag{
-			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-		}
-	}
+	
 	err = k.RewardSettlement(ctx, address.String())
 	if err != nil {
-		logs.Error(logPrefix, address.String(), ",RewardSettlement error:", err.Error())
+		log.WithError(err).WithField("address", address.String()).Error("RewardSettlement")
 		return &types.MsgEmptyResponse{}, err
 	}
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	fromAddress, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("FromAddress", msg.FromAddress).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	var toAddress sdk.AccAddress
-	if msg.ToAddress == config.ContractAddressDestory.String() {
-		toAddress = config.ContractAddressDestory
+	if msg.ToAddress == core.ContractAddressDestory.String() {
+		toAddress = core.ContractAddressDestory
 	} else {
 		toAddress, err = sdk.AccAddressFromBech32(msg.ToAddress)
 		if err != nil {
-			logs.Error(logPrefix, "AccAddressFromBech32 error2 |", err.Error())
+			log.WithError(err).WithField("ToAddress", msg.ToAddress).Error("AccAddressFromBech32")
 			return &types.MsgEmptyResponse{}, err
 		}
 	}
@@ -208,30 +194,31 @@ func (k msgServer) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*typ
 	var realCoins types.RealCoins
 	err = util.Json.Unmarshal([]byte(msg.Coins), &realCoins)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return &types.MsgEmptyResponse{}, err
 	}
 	coins := types.MustRealCoins2LedgerCoins(realCoins)
+	
+	if k.CoinKeeper.BlockedAddr(toAddress) {
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
+	}
 
 	err = k.Keeper.Transfer(ctx, fromAddress, toAddress, coins)
 	return &types.MsgEmptyResponse{}, err
 }
 
-func (k msgServer) AuthorizeAccount(goCtx context.Context, msg *types.MsgAuthorizeAccount) (*types.MsgEmptyResponse, error) {
-	return &types.MsgEmptyResponse{}, nil
-}
 
 func (k msgServer) ComplainVote(goCtx context.Context, msg *types.MsgComplainVote) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	voteAccount, err := sdk.AccAddressFromBech32(msg.VoteAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("VoteAccount", msg.VoteAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	power, err := sdk.NewDecFromStr(msg.VotePower)
 	if err != nil {
-		logs.Error(logPrefix, "NewDecFromStr error | ", err.Error())
+		log.WithError(err).WithField("VotePower", msg.VotePower).Error("NewDecFromStr")
 		return &types.MsgEmptyResponse{}, err
 	}
 	data := types.ComplainVoteData{
@@ -244,13 +231,18 @@ func (k msgServer) ComplainVote(goCtx context.Context, msg *types.MsgComplainVot
 	return &types.MsgEmptyResponse{}, err
 }
 
-func (k msgServer) ComplainResponse(goCtx context.Context, msg *types.MsgComplainResponse) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
-	ctx := sdk.UnwrapSDKContext(goCtx)
 
+func (k msgServer) ComplainResponse(goCtx context.Context, msg *types.MsgComplainResponse) (*types.MsgEmptyResponse, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	/*complainAccount, err := sdk.AccAddressFromBech32(msg.)
+	if err != nil {
+		log.Error("", err)
+		return &types.MsgEmptyResponse{}, err
+	}*/
 	accuseAccount, err := sdk.AccAddressFromBech32(msg.AccuseAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("AccuseAccount", msg.AccuseAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
@@ -267,17 +259,20 @@ func (k msgServer) ComplainResponse(goCtx context.Context, msg *types.MsgComplai
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) CopyrightComplain(goCtx context.Context, msg *types.MsgCopyrightComplain) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	
 	complainAccount, err := sdk.AccAddressFromBech32(msg.ComplainAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("ComplainAccount", msg.ComplainAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
+	
 	accuseAccount, err := sdk.AccAddressFromBech32(msg.AccuseAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+		log.WithError(err).WithField("AccuseAccount", msg.AccuseAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	if k.ComplainHashStatus(ctx, msg.Datahash) {
@@ -300,50 +295,16 @@ func (k msgServer) CopyrightComplain(goCtx context.Context, msg *types.MsgCopyri
 	return &types.MsgEmptyResponse{}, err
 }
 
-func (k msgServer) CopyrightBonus(goCtx context.Context, msg *types.MsgCopyrightBonus) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
-		return &types.MsgEmptyResponse{}, err
-	}
-	dataHashAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
-	if err != nil {
-		logs.Error("AccAddressFromBech32 error2 | ", err.Error())
-		return &types.MsgEmptyResponse{}, err
-	}
-
-	data := types.CopyrightBonusData{
-		Downer:            creator,
-		DataHash:          msg.Datahash,
-		OfferAccountShare: msg.OfferAccountShare,
-		HashAccount:       dataHashAccount,
-		BonusType:         msg.BonusType,
-	}
-	data.Fee = types.NewLedgerFee(config.CopyrightFee)
-	err = k.Keeper.CopyrightBonus(ctx, data)
-	return &types.MsgEmptyResponse{}, err
-}
-
-
+//V2
 func (k msgServer) CopyrightBonusV2(goCtx context.Context, msg *types.MsgCopyrightBonusV2) (*types.MsgEmptyResponse, error) {
-	log := util.BuildLog(util.GetFuncName(), util.LmChainMsgServer)
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	if ctx.BlockHeight() > config.Upgrade20220601Height{
-		lockFlag := types2.JudgeLockedAccount(msg.Creator)
-		if lockFlag{
-			passFlag := types2.JudgePassedAccount(msg.Creator)
-			if !passFlag{
-				return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-			}
-		}
-	}
+
 	dataHashAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
 	if err != nil {
 		log.WithError(err).WithField("DataHashAccount", msg.DataHashAccount).Error("AccAddressFromBech32")
@@ -357,11 +318,12 @@ func (k msgServer) CopyrightBonusV2(goCtx context.Context, msg *types.MsgCopyrig
 		HashAccount:       dataHashAccount,
 		BonusType:         msg.BonusType,
 	}
-	data.Fee = types.NewLedgerFee(config.CopyrightFee)
+	data.Fee = types.NewLedgerFee(core.ChainDefaultFee)
 	err = k.Keeper.CopyrightBonus(ctx, data)
 	if err != nil {
 		return &types.MsgEmptyResponse{}, err
 	}
+	
 	err = k.SetBonusAddress(ctx, msg.BonusAddress, creator.String(), ctx.BlockHeight())
 	if err != nil {
 		log.WithError(err).Error("SetBonusAddress")
@@ -369,49 +331,48 @@ func (k msgServer) CopyrightBonusV2(goCtx context.Context, msg *types.MsgCopyrig
 	return &types.MsgEmptyResponse{}, err
 }
 
-func (k msgServer) CopyrightBonusRear(goCtx context.Context, msg *types.MsgCopyrightBonusRear) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+
+func (k msgServer) CopyrightBonusRearV2(goCtx context.Context, msg *types.MsgCopyrightBonusRearV2) (*types.MsgEmptyResponse, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	copyrightByte, err := k.GetCopyright(ctx, msg.Datahash)
 	if err != nil {
-		logs.Error(logPrefix, "GetCopyright error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
 	var copyrightData types.CopyrightData
 	err = util.Json.Unmarshal(copyrightByte, &copyrightData)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return &types.MsgEmptyResponse{}, err
 	}
 	txhash := formatTxHash(ctx.TxBytes())
-	err = dealBonusAuthrizeLogic(ctx, k.Keeper, msg.OfferAccountShare, txhash, "", config.KeyCopyrightBonus, ctx.BlockHeight(), copyrightData)
-	if err != nil {
-		logs.Error(logPrefix, "dealBonusAuthrizeLogic error | ", err.Error())
-		return &types.MsgEmptyResponse{}, err
+
+	
+	if k.IsExistBonusAddress(ctx, msg.BonusAddress) {
+		err = dealBonusAuthrizeLogic(ctx, k.Keeper, msg.OfferAccountShare, txhash, "", core.KeyCopyrightBonus, ctx.BlockHeight(), copyrightData)
+		if err != nil {
+			log.WithError(err).Error("dealBonusAuthrizeLogic")
+			return &types.MsgEmptyResponse{}, err
+		}
+		//key
+		k.DeleteBonusAddress(ctx, msg.BonusAddress)
 	}
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) CopyrightVote(goCtx context.Context, msg *types.MsgVoteCopyright) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	copyrightByte, err := k.GetCopyright(ctx, msg.DataHash)
 	if err != nil {
-		logs.Error(logPrefix, "GetCopyright error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
 	var copyrightData types.CopyrightData
 	err = util.Json.Unmarshal(copyrightByte, &copyrightData)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return &types.MsgEmptyResponse{}, err
-	}
-	lockFlag := types2.JudgeLockedAccount(msg.Address)
-	if lockFlag{
-		passFlag := types2.JudgePassedAccount(msg.Address)
-		if !passFlag{
-			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-		}
 	}
 
 	if copyrightData.ApproveStatus != 0 {
@@ -420,18 +381,18 @@ func (k msgServer) CopyrightVote(goCtx context.Context, msg *types.MsgVoteCopyri
 	txhash := formatTxHash(ctx.TxBytes())
 	err = k.dealCopyrightVote(ctx, msg.Address, copyrightData.Name, copyrightData.DataHash, msg.Power, txhash, copyrightData.LinkMap)
 	if err != nil {
-		logs.Error(logPrefix, "dealCopyrightVote error | ", err.Error())
 		return &types.MsgEmptyResponse{}, err
 	}
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) DeleteCopyright(goCtx context.Context, msg *types.MsgDeleteCopyright) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
@@ -443,19 +404,19 @@ func (k msgServer) DeleteCopyright(goCtx context.Context, msg *types.MsgDeleteCo
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) EditorCopyright(goCtx context.Context, msg *types.MsgEditorCopyright) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	logs.Debug(logPrefix, "版权价格", msg.Price)
 	var price types.RealCoin
 	err = util.Json.Unmarshal([]byte(msg.Price), &price)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return &types.MsgEmptyResponse{}, err
 	}
 	data := types.EditorCopyrightData{
@@ -470,22 +431,23 @@ func (k msgServer) EditorCopyright(goCtx context.Context, msg *types.MsgEditorCo
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) Mortgage(goCtx context.Context, msg *types.MsgMortgage) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	mortgageAccount, err := sdk.AccAddressFromBech32(msg.MortageAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("MortageAccount", msg.MortageAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	datahashAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error3 | ", err.Error())
+		log.WithError(err).WithField("DataHashAccount", msg.DataHashAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	/*copyrightPrice, err := strconv.ParseFloat(msg.CopyrightPrice, 64)
@@ -496,22 +458,21 @@ func (k msgServer) Mortgage(goCtx context.Context, msg *types.MsgMortgage) (*typ
 	var price types.RealCoin
 	err = util.Json.Unmarshal([]byte(msg.CopyrightPrice), &price)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error1 | ", err.Error())
+		log.WithError(err).Error("Unmarshal1")
 		return &types.MsgEmptyResponse{}, err
 	}
 	var mortgageAmount types.RealCoin
 	err = util.Json.Unmarshal([]byte(msg.MortgageAmount), &mortgageAmount)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error2 | ", err.Error())
+		log.WithError(err).Error("Unmarshal2")
 		return &types.MsgEmptyResponse{}, err
 	}
 	mortgAmountDecimal, err := decimal.NewFromString(mortgageAmount.Amount)
 	if err != nil {
-		logs.Error(logPrefix, "NewFromString error1 | ", err.Error())
+		log.WithError(err).WithField("mortgageAmount", mortgageAmount.Amount).Error("NewFromString")
 		return &types.MsgEmptyResponse{}, err
 	}
-	fee := mortgAmountDecimal.Mul(decimal.RequireFromString(config.MortgageFee))
-	feeFloat64, _ := fee.Float64()
+	fee := mortgAmountDecimal.Mul(core.MortgageFee)
 	data := types.MortgageData{
 		MortgageAccount:   mortgageAccount,
 		Creator:           creator,
@@ -523,10 +484,11 @@ func (k msgServer) Mortgage(goCtx context.Context, msg *types.MsgMortgage) (*typ
 		OfferAccountShare: msg.OfferAccountShare,
 		BonusType:         msg.BonusType,
 	}
-	data.Fee = types.NewLedgerFee(feeFloat64)
+	data.Fee = types.NewLedgerFee(fee)
 	err = k.Keeper.Mortgage(ctx, data)
 	return &types.MsgEmptyResponse{}, err
 }
+
 
 func (k msgServer) DistributeCommunityReward(goCtx context.Context, msg *types.MsgDistributeCommunityReward) (*types.MsgEmptyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -534,7 +496,7 @@ func (k msgServer) DistributeCommunityReward(goCtx context.Context, msg *types.M
 	if err != nil {
 		return &types.MsgEmptyResponse{}, err
 	}
-	if msg.Address != config.CommunityRewardAccount {
+	if msg.Address != core.CommunityRewardAccount { 
 		return &types.MsgEmptyResponse{}, types.UnAuthorizedAccountError
 	}
 	accountAddress, err := sdk.AccAddressFromBech32(msg.Address)
@@ -545,36 +507,36 @@ func (k msgServer) DistributeCommunityReward(goCtx context.Context, msg *types.M
 	return &types.MsgEmptyResponse{}, err
 }
 
+
 func (k msgServer) SpaceMiner(goCtx context.Context, msg *types.MsgSpaceMiner) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
-	lockFlag := types2.JudgeLockedAccount(msg.Creator)
-	if lockFlag{
-		passFlag := types2.JudgePassedAccount(msg.Creator)
-		if !passFlag{
-			return &types.MsgEmptyResponse{},sdkerrors.ErrLockedAccount
-		}
-	}
+
+	
 	awardAccount, err := sdk.AccAddressFromBech32(msg.AwardAccount)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+		log.WithError(err).WithField("AwardAccount", msg.AwardAccount).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
 	var realCoin types.RealCoin
+	
 	err = util.Json.Unmarshal([]byte(msg.DeflationAmount), &realCoin)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error | ", err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return &types.MsgEmptyResponse{}, err
 	}
+	
 	if realCoin.Denom != sdk.DefaultBondDenom {
 		return &types.MsgEmptyResponse{}, types.OnlyMainTokenErr
 	}
+	
 	data := types.SpaceMinerData{
 		Creator:         creator,
 		DeflationAmount: realCoin,
@@ -583,34 +545,18 @@ func (k msgServer) SpaceMiner(goCtx context.Context, msg *types.MsgSpaceMiner) (
 	return &types.MsgEmptyResponse{}, k.Keeper.AddSpaceMiner(ctx, data)
 }
 
-func (k msgServer) DeflationVote(goCtx context.Context, msg *types.MsgDeflationVote) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
-		return &types.MsgEmptyResponse{}, err
-	}
-	data := types.DeflationVoteData{
-		Creator: creator,
-		Option:  msg.Option,
-	}
-	return &types.MsgEmptyResponse{}, k.Keeper.DeflationVote(ctx, data)
-}
-
 func (k msgServer) NftTransfer(goCtx context.Context, msg *types.MsgNftTransfer) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	from, err := sdk.AccAddressFromBech32(msg.From)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.From).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	to, err := sdk.AccAddressFromBech32(msg.To)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.To).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 	if msg.TokenId == "" {
@@ -627,13 +573,14 @@ func (k msgServer) NftTransfer(goCtx context.Context, msg *types.MsgNftTransfer)
 	return &types.MsgEmptyResponse{}, k.Keeper.HandleNftTransfer(ctx, data)
 }
 
+
 func (k msgServer) RegisterCopyrightParty(goCtx context.Context, msg *types.MsgRegisterCopyrightParty) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error | ", err.Error())
+		log.WithError(err).WithField("Creator", msg.Creator).Error("AccAddressFromBech32")
 		return &types.MsgEmptyResponse{}, err
 	}
 
@@ -646,30 +593,14 @@ func (k msgServer) RegisterCopyrightParty(goCtx context.Context, msg *types.MsgR
 	return &types.MsgEmptyResponse{}, k.Keeper.SetCopyrightParty(ctx, data)
 }
 
+
 func (k msgServer) CreateCopyright(goCtx context.Context, msg *types.MsgCreateCopyright) (*types.MsgEmptyResponse, error) {
-	logPrefix := k.logPrefix + " | " + util.GetFuncName() + " | "
+	log := core.BuildLog(core.GetFuncName(), core.LmChainMsgServer)
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	data, err := types.NewCopyrightData(*msg)
 	if err != nil {
-		logs.Error(logPrefix, "NewCopyrightData error | ", err.Error())
+		log.WithError(err).Error("NewCopyrightData")
 		return &types.MsgEmptyResponse{}, err
 	}
 	return &types.MsgEmptyResponse{}, k.Keeper.SetCopyright(ctx, *data)
-}
-
-func (k Keeper) InviteCode(goCtx context.Context, msg *types.MsgInviteCode) (*types.MsgEmptyResponse, error) {
-	/*ctx := sdk.UnwrapSDKContext(goCtx)
-	address, err := sdk.AccAddressFromBech32(msg.Address)
-	if err != nil {
-		return nil, err
-	}
-	err = k.CreateInviteCode(ctx, address)
-	if err != nil {
-		return nil, err
-	}*/
-	/*err = k.InviteRecording(ctx, msg.InviteCode, address, msg.InviteTime)
-	if err != nil {
-		return nil, err
-	}*/
-	return &types.MsgEmptyResponse{}, nil
 }

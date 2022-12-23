@@ -3,8 +3,8 @@ package keeper
 import (
 	// this line is used by starport scaffolding # 1
 
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
 	"fs.video/blockchain/x/copyright/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,6 +12,7 @@ import (
 	slashingTypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"strconv"
 	"strings"
@@ -24,88 +25,84 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			err error
 		)
 		switch path[0] {
-		case types.QueryCopyrightDetail:
+		case types.QueryCopyrightDetail: 
 			return queryCopyrightDetail(ctx, req, k, legacyQuerierCdc)
-		case types.QueryOriginHash:
+		case types.QueryOriginHash: //hash
 			return queryOriginDatahashDetail(ctx, req, k, legacyQuerierCdc)
-		case types.QueryPubCount:
+		case types.QueryPubCount: 
 			return queryPubCount(ctx, req, k, legacyQuerierCdc)
-		case types.QueryBonusExtrainfor:
+		case types.QueryBonusExtrainfor: 
 			return queryCopyrightBonusInfor(ctx, req, k, legacyQuerierCdc)
-		case types.QueryCopyrightExist:
+		case types.QueryCopyrightExist: 
 			return queryCopyrightExist(ctx, req, k, legacyQuerierCdc)
-		case types.QueryCopyrightParty:
+		case types.QueryCopyrightParty: 
 			return queryCopyrightParty(ctx, req, k, legacyQuerierCdc)
-		case types.QueryCopyrightPublishId:
+		case types.QueryCopyrightPublishId: //id
 			return queryCopyrightPublishId(ctx, k)
-		case types.QueryCopyrightPartyExist:
+		case types.QueryCopyrightPartyExist: 
 			return queryCopyrightPartyExist(ctx, req, k, legacyQuerierCdc)
-		case types.QueryAccountSpaceMiner:
+		case types.QueryAccountSpaceMiner: 
 			return queryAccountSpaceMiner(ctx, req, k, legacyQuerierCdc)
-		case types.QueryDeflationVoteTitle:
-			return queryDeflationVoteTitle(ctx, k)
-		case types.QueryDeflationRateInfor:
-			return queryDeflationRateInfor(ctx, k)
-		case types.QuerySpaceFee:
+		case types.QuerySpaceFee: 
 			return querySpacefee(ctx, k)
-		case types.QueryTotalSpaceInfor:
+		case types.QueryTotalSpaceInfor: 
 			return spaceTotal(ctx, k)
-		case types.QuerySpaceAward:
-			return spaceAward(ctx,k)
-		case types.QuerySpaceAmount:
+		case types.QuerySpaceAward: 
+			return spaceAward(ctx, k)
+		case types.QueryHasMinerBonus: 
+			return hasMinerBonus(ctx, k)
+		case types.QuerySpaceAmount: 
 			return spaceAmount(ctx, k)
-		case types.QueryDeflationMinerInfor:
+		case types.QueryDeflationMinerInfor: 
 			return queryDeflationMinerInfor(ctx, k)
-		case types.QueryDeflationVoteInfor:
-			return queryDeflationVoteInfor(ctx, k)
-		case types.QueryNftInfor:
+		case types.QueryDeflationRateInfor: 
+			return queryDeflationRateInfor(ctx, k)
+		case types.QueryNftInfor: //nft
 			return queryNftInfor(ctx, req, k, legacyQuerierCdc)
-		case types.QueryBlockRDS:
+		case types.QueryBlockRDS: //RDS
 			return queryBlockRDS(ctx, req, k, legacyQuerierCdc)
-		case types.QueryValidatorByConsAddress:
+		case types.QueryValidatorByConsAddress: //POS，
 			return queryValidatorByConsAddress(ctx, req, k, legacyQuerierCdc)
-		case types.QueryValidatorDelegationDetail:
+		case types.QueryValidatorDelegationDetail: //，、、
 			return queryValidatorDelegationDetail(ctx, req, k, legacyQuerierCdc)
-		case types.QuerySigningInfo:
+		case types.QuerySigningInfo: 
 			return queryValidatorSigningInfo(ctx, req, k, legacyQuerierCdc)
-		case types.QueryDelegationShares:
+		case types.QueryDelegationShares: 
 			return queryDelegationShares(ctx, req, k, legacyQuerierCdc)
-		case types.QueryDelegation:
+		case types.QueryDelegation: 
 			return queryDelegation(ctx, req, k, legacyQuerierCdc)
-		case types.QueryDelegationPreview:
+		case types.QueryDelegationPreview: //POS，
 			return queryDelegationPreview(ctx, req, k, legacyQuerierCdc)
-		case types.QueryUnbondingDelegationPreview:
+		case types.QueryUnbondingDelegationPreview: //POS，
 			return queryUnbondingDelegationPreview(ctx, req, k, legacyQuerierCdc)
-		case types.QueryTotalShares:
+		case types.QueryTotalShares: 
 			return queryTotalShares(ctx, k, legacyQuerierCdc)
-		case types.QueryDelegationByConsAddress:
+		case types.QueryDelegationByConsAddress: 
 			return queryDelegationByConsAddress(ctx, req, k, legacyQuerierCdc)
-		case types.QueryInviteCodeByAccount:
-			return queryInviteCodeByAccount(ctx, req, k, legacyQuerierCdc)
-		case types.QueryInviteRecord:
+		case types.QueryInviteRecord: 
 			return queryInviteRecord(ctx, req, k, legacyQuerierCdc)
-		case types.QueryInviteStatistics:
+		case types.QueryInviteStatistics: 
 			return queryInviteRewardStatistics(ctx, req, k, legacyQuerierCdc)
-		case types.QueryMortgAmount:
+		case types.QueryMortgAmount: 
 			return queryMortgAmount(ctx, k)
-		case types.QueryMiningStage:
-			return []byte(strconv.FormatInt(config.MortgageRate, 10)), nil
-		case types.QueryMortgMiningInfor:
+		case types.QueryMiningStage: 
+			return []byte(strconv.FormatInt(core.MortgageRate, 10)), nil
+		case types.QueryMortgMiningInfor: 
 			return queryMortgMinerInfor(ctx, k)
-		case types.QueryCopyrightComplain:
+		case types.QueryCopyrightComplain: 
 			return queryCopyrightComplain(ctx, req, k, legacyQuerierCdc)
-		case types.QueryAuthorizePubkey:
-			return queryPubkeyInfor(ctx, req, k, legacyQuerierCdc)
-		case types.QueryAuthorizeValidator:
-			return queryAuthorizeValidator(ctx, req, k, legacyQuerierCdc)
-		case types.QueryRewardInfo:
+		case types.QueryRewardInfo: 
 			return queryRewardInfo(ctx, req, k, legacyQuerierCdc)
-		case types.QuerySpaceMinerRewardInfo:
+		case types.QuerySpaceMinerRewardInfo: 
 			return querySpaceMinerRewardInfo(ctx, req, k, legacyQuerierCdc)
-		case types.QueryValidatorInfo:
+		case types.QueryValidatorInfo: 
 			return queryValidatorInfo(ctx, req, k, legacyQuerierCdc)
-		case types.QueryDelegationFreeze:
+		case types.QueryDelegationFreeze: 
 			return queryDelegationFreeze(ctx, req, k, legacyQuerierCdc)
+		case types.QueryCopyrightExport: 
+			return queryCopyrightExport(ctx, req, k, legacyQuerierCdc)
+		case types.QueryParams: 
+			return queryParams(ctx, k, legacyQuerierCdc)
 		default:
 			err = sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown %s query endpoint: %s", types.ModuleName, path[0])
 		}
@@ -113,13 +110,99 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 		return res, err
 	}
 }
+func queryParams(ctx sdk.Context, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	params := k.GetParams(ctx)
+	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, params)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+	return res, nil
+}
+
+
+func queryCopyrightExport(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
+	var params types.QueryAccountParams
+	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
+	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+	}
+	genesisState := types.DefaultGenesis()
+	switch params.Account {
+	case "accountSpace":
+		res := k.ExportAccountSpace(ctx)
+		genesisState.AccountSpace = res
+	case "deflationInfor":
+		res := k.ExportDeflationInfor(ctx)
+		genesisState.DeflationInfor = res
+	case "inviteRelation":
+		res := k.ExportInviteRelation(ctx)
+		genesisState.InviteRelation = res
+	case "inviteRecording":
+		res := k.ExportInviteRecording(ctx)
+		genesisState.InviteRecords = res
+	case "inviteReward":
+		res := k.ExportInviteReward(ctx)
+		genesisState.InviteReward = res
+	case "inviteStatistics":
+		res := k.ExportInviteStatistics(ctx)
+		genesisState.InvitesStatistics = res
+	case "copyrightParty":
+		res := k.ExportCopyrightParty(ctx)
+		genesisState.CopyrightPart = res
+	case "copyrightPublishId":
+		res := k.ExportCopyrightPublishId(ctx)
+		genesisState.CpyrightPublishId = res
+	case "copyright":
+		res := k.ExportCopyright(ctx)
+		genesisState.Copyright = res
+	case "copyrightExtra":
+		res := k.ExportCopyrightExtraNew(ctx)
+		genesisState.CopyrightExtra = res
+	case "copyrightIp":
+		res := k.ExportCopyrightIp(ctx)
+		genesisState.CopyrightIp = res
+	case "copyrightOriginHash":
+		res := k.ExportCopyrightOriginHash(ctx)
+		genesisState.CopyrightOriginHash = res
+	case "copyrightBonusAddress":
+		res := k.ExportCopyrightBonusAddress(ctx)
+		genesisState.CopyrightBonus = res
+	case "copyrightNft":
+		res := k.ExportCopyrightNft(ctx)
+		genesisState.NftInfo = res
+	case "copyrightVote":
+		res := k.ExportCopyrightVote(ctx)
+		genesisState.CopyrightVote = res
+	case "copyrightVoteList":
+		res := k.ExportCopyrightVoteList(ctx)
+		genesisState.CopyrightVoteList = res
+	case "copyrightApproveResult":
+		res := k.ExportCopyrightApproveResult(ctx)
+		genesisState.ApproveResult = res
+	case "copyrightVoteRedeem":
+		res := k.ExportCopyrightVoteRedeem(ctx)
+		genesisState.CopyrightVoteRedeem = res
+	}
+	res, err := util.Json.Marshal(genesisState)
+	if err != nil {
+		log.WithError(err).Error("Marshal")
+		return nil, err
+	}
+	return res, nil
+}
+
 
 func queryValidatorInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params stakingTypes.QueryValidatorsParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
+	
 	validators := k.stakingKeeper.GetAllValidators(ctx)
 	validatorsFilter := stakingTypes.Validators{}
 	filteredVals := make([]types.ValidatorInfo, 0)
@@ -133,12 +216,14 @@ func queryValidatorInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacy
 		validatorsFilter = validators
 	}
 	for _, val := range validatorsFilter {
+		
 		validatorInfo := valInfo(val)
 		consAddr, err := val.GetConsAddr()
 		validatorInfo.ConsAddress = consAddr.String()
 		if err != nil {
 			continue
 		}
+		
 		validatorSignInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 		if !found {
 			continue
@@ -149,10 +234,12 @@ func queryValidatorInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacy
 	}
 	res, err := util.Json.Marshal(filteredVals)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, err
 	}
 	return res, nil
 }
+
 
 func valInfo(val stakingTypes.Validator) types.ValidatorInfo {
 	validatorInfo := types.ValidatorInfo{
@@ -176,10 +263,13 @@ func valInfo(val stakingTypes.Validator) types.ValidatorInfo {
 	return validatorInfo
 }
 
+
 func querySpaceMinerRewardInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryAccountParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	//accountBonusMap := k.QueryDeflationAccountBonus(ctx)
@@ -190,15 +280,19 @@ func querySpaceMinerRewardInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper,
 	realCoinBonus := types.NewRealCoinFromStr(sdk.DefaultBondDenom, accountBonusString)
 	res, err := util.Json.Marshal(realCoinBonus)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, err
 	}
 	return res, nil
 }
 
+
 func queryRewardInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryAccountParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	settlement, err := k.QueryRewardInfo(ctx, params.Account)
@@ -209,25 +303,37 @@ func queryRewardInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQue
 	reward["actually"] = "0"
 	reward["deserve"] = "0"
 	if settlement != nil {
+		log.WithFields(logrus.Fields{
+			"Capacity expansion": settlement.ExpansionRewardSpace,
+			"Invitation reward":  settlement.InviteRewardSpace,
+		}).Debug("Account invitation reward information")
+		
 		deserveSpace := settlement.InviteRewardSpace.Add(settlement.ExpansionRewardSpace)
 		reward["deserve"] = deserveSpace.StringFixed(4)
 
 		accountMiner := k.QueryAccountSpaceMinerInfor(ctx, params.Account)
+		
 		sp := accountMiner.BuySpace.Mul(decimal.RequireFromString(InviteSpaceRateKey)).Sub(accountMiner.RewardSpace)
+		
 		if sp.LessThan(deserveSpace) {
 			deserveSpace = sp
 		}
+		if sp.IsNegative() {
+			deserveSpace = decimal.Zero
+		}
 		reward["actually"] = deserveSpace.StringFixed(4)
-
 	}
 	res, err := util.Json.Marshal(reward)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
+
 func queryPubCount(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryPubCountParams
 
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
@@ -238,49 +344,44 @@ func queryPubCount(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQueri
 	copyrightSpaceInfor := k.GetPubCount(ctx, params.DayString)
 	res, err := util.Json.Marshal(copyrightSpaceInfor)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
+
 func queryCopyrightBonusInfor(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryResourceAndHashRelationParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, err
 	}
 	res := keeper.GetCopyrightBonusInfo(ctx, params.Hash, params.Account)
 	return res, nil
 }
 
-func queryInviteCodeByAccount(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
-	var params types.QueryAccountParams
-	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
-	}
-	address, err := sdk.AccAddressFromBech32(params.Account)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, err.Error())
-	}
-	inviteCode := keeper.QueryInviteCodeByAddr(ctx, address)
-	return []byte(inviteCode), nil
-}
 
 func queryMortgAmount(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	mortgageAmount := keeper.GetMiningAmount(ctx)
 	return []byte(mortgageAmount.Amount), nil
 }
 
+
 func queryMortgMinerInfor(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	mortgageAmount := keeper.QueryMortgMinerInfor(ctx)
 	return util.Json.Marshal(mortgageAmount)
 }
 
+
 func queryCopyrightComplain(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryCopyrightComplainParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -289,18 +390,26 @@ func queryCopyrightComplain(ctx sdk.Context, req abci.RequestQuery, keeper Keepe
 		return nil, err
 	}
 	complainBytes, err := util.Json.Marshal(complainInfor)
+	if err != nil {
+		log.WithError(err).Error("Marshal")
+		return nil, err
+	}
 	return complainBytes, nil
 }
 
+
 func queryInviteRecord(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryInviteRecordParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	inviteAddress := params.InviteAddress
 	addr, err := sdk.AccAddressFromBech32(inviteAddress)
 	if err != nil {
+		log.WithError(err).WithField("inviteAddress", inviteAddress).Error("AccAddressFromBech32")
 		return nil, err
 	}
 	record, err := keeper.GetInviteRecording(ctx, addr)
@@ -312,19 +421,24 @@ func queryInviteRecord(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, le
 	}
 	recordByte, err := util.Json.Marshal(record)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return recordByte, nil
 }
 
+
 func queryInviteRewardStatistics(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryAccountParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	address, err := sdk.AccAddressFromBech32(params.Account)
 	if err != nil {
+		log.WithError(err).WithField("Account", params.Account).Error("AccAddressFromBech32")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, err.Error())
 	}
 	res, err := keeper.GetInviteRewardStatistics(ctx, address)
@@ -333,50 +447,63 @@ func queryInviteRewardStatistics(ctx sdk.Context, req abci.RequestQuery, keeper 
 	}
 	resByte, err := util.Json.Marshal(res)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return resByte, nil
 }
 
+
 func queryValidatorByConsAddress(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryValidatorByConsAddrParams
 
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
+	
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, params.ValidatorConsAddress)
 	if !found {
 		return nil, stakingTypes.ErrNoValidatorFound
 	}
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, validator)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
+
 func queryDelegationByConsAddress(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryDelegatorByConsAddrParams
 
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
+	
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, params.ValidatorConsAddress)
 	if !found {
 		return nil, stakingTypes.ErrNoValidatorFound
 	}
+	
 	delegation, found := k.stakingKeeper.GetDelegation(ctx, params.DelegatorAddr, validator.GetOperator())
 	if !found {
 		return nil, stakingTypes.ErrNoDelegation
 	}
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, delegation)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
+
 
 func queryTotalShares(ctx sdk.Context, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	/*validators := k.stakingKeeper.GetAllValidators(ctx)
@@ -388,10 +515,13 @@ func queryTotalShares(ctx sdk.Context, k Keeper, legacyQuerierCdc *codec.LegacyA
 	return []byte(totalString), nil
 }
 
+
 func queryUnbondingDelegationPreview(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryUnbondingDelegationPreviewParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -403,47 +533,58 @@ func queryUnbondingDelegationPreview(ctx sdk.Context, req abci.RequestQuery, k K
 	if !found {
 		return nil, stakingTypes.ErrNoDelegatorForAddress
 	}
+	
 	shares, err := k.stakingKeeper.ValidateUnbondAmount(
 		ctx, params.DelegatorAddr, params.ValidatorAddr, params.Amount.Amount,
 	)
 	if err != nil {
+		log.WithError(err).WithFields(logrus.Fields{
+			"delAddr": params.DelegatorAddr.String(),
+			"valAddr": params.ValidatorAddr.String(),
+			"amt":     params.Amount.Amount.String(),
+		}).Error("ValidateUnbondAmount")
 		return nil, err
 	}
 	var removeToken sdk.Int
-	source_amount := types.MustParseLedgerDec(validator.TokensFromShares(delegation.Shares))
+	source_amount := types.MustParseLedgerDec(validator.TokensFromShares(delegation.Shares)) 
 	if delegation.Shares.LT(shares) {
 		return nil, stakingTypes.ErrNotEnoughDelegationShares
 	}
-	balanceShares := delegation.Shares.Sub(shares)
+	balanceShares := delegation.Shares.Sub(shares) 
 
-	validator, removeToken = validator.RemoveDelShares(shares)
+	validator, removeToken = validator.RemoveDelShares(shares) 
+	//fmt.Println("token:",validator.Tokens)
 
 	resp := types.UnbondingDelegationPreviewResponse{
-		Shares:        types.MustParseLedgerDec(shares),
-		Amount:        types.MustParseLedgerDec(removeToken.ToDec()),
+		Shares:        types.MustParseLedgerDec(shares),              
+		Amount:        types.MustParseLedgerDec(removeToken.ToDec()), 
 		SourceAmount:  source_amount,
 		SourceShares:  types.MustParseLedgerDec(delegation.Shares),
-		BalanceShares: types.MustParseLedgerDec(balanceShares),
+		BalanceShares: types.MustParseLedgerDec(balanceShares), 
 	}
 
 	if validator.Tokens.IsZero() {
-		resp.BalanceAmount = "0"
+		resp.BalanceAmount = "0" 
 	} else {
-		balanceAmount := validator.TokensFromShares(delegation.Shares).Sub(sdk.NewDecFromInt(removeToken))
-		resp.BalanceAmount = types.MustParseLedgerDec(balanceAmount)
+		balanceAmount := validator.TokensFromShares(delegation.Shares).Sub(sdk.NewDecFromInt(removeToken)) 
+		resp.BalanceAmount = types.MustParseLedgerDec(balanceAmount)                                       
 	}
 
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, resp)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
+
 func queryDelegationPreview(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryDelegationPreviewParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -465,24 +606,28 @@ func queryDelegationPreview(ctx sdk.Context, req abci.RequestQuery, k Keeper, le
 	balance_amount = validator.TokensFromSharesTruncated(balance_shares)
 
 	resp := types.DelegationPreviewResponse{
-		Shares:        types.MustParseLedgerDec(shares),
+		Shares:        types.MustParseLedgerDec(shares), 
 		SourceAmount:  types.MustParseLedgerDec(validator.TokensFromShares(delegation.Shares)),
 		SourceShares:  types.MustParseLedgerDec(delegation.Shares),
-		BalanceAmount: types.MustParseLedgerDec(balance_amount),
-		BalanceShares: types.MustParseLedgerDec(balance_shares),
+		BalanceAmount: types.MustParseLedgerDec(balance_amount), 
+		BalanceShares: types.MustParseLedgerDec(balance_shares), 
 	}
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, resp)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	return res, nil
 }
 
+//pos
 func queryDelegationShares(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryDelegatorParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -490,10 +635,13 @@ func queryDelegationShares(ctx sdk.Context, req abci.RequestQuery, k Keeper, leg
 	return []byte(totalSharesStr), nil
 }
 
+//pos
 func queryDelegation(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryDelegatorParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	totalSharesStr, totalBalanceStr := k.GetAccountDelegatorShares(ctx, params.DelegatorAddr)
@@ -505,9 +653,11 @@ func queryDelegation(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQue
 }
 
 func queryDelegationFreeze(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var params types.QueryDelegatorParams
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	freezeCoin, err := k.stakingKeeper.GetDelegationFreeze(ctx, params.DelegatorAddr)
@@ -518,31 +668,36 @@ func queryDelegationFreeze(ctx sdk.Context, req abci.RequestQuery, k Keeper, leg
 	return []byte(realCoin), nil
 }
 
+
 func queryValidatorSigningInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryValidatorSigningInfoParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
 	validatorSignInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, params.ConsAddress)
 	if !found {
-		return nil, slashingTypes.ErrNoSigningInfoFound //签名信息未找到
+		return nil, slashingTypes.ErrNoSigningInfoFound 
 	}
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, validatorSignInfo)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
 /**
+，、、
 */
 func queryValidatorDelegationDetail(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryBondsParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -553,10 +708,11 @@ func queryValidatorDelegationDetail(ctx sdk.Context, req abci.RequestQuery, k Ke
 		return nil, stakingTypes.ErrNoValidatorFound
 	}
 
-	undelegationAmount := sdk.NewDec(0)
-	delegationShareNumber := sdk.NewDec(0)
-	validatorShareNumber := validator.DelegatorShares
+	undelegationAmount := sdk.NewDec(0)               
+	delegationShareNumber := sdk.NewDec(0)            
+	validatorShareNumber := validator.DelegatorShares 
 
+	
 	delegations, found := k.stakingKeeper.GetDelegation(ctx, params.DelegatorAddr, params.ValidatorAddr)
 	if found {
 		delegationShareNumber = delegations.Shares
@@ -568,6 +724,7 @@ func queryValidatorDelegationDetail(ctx sdk.Context, req abci.RequestQuery, k Ke
 		}
 	}*/
 
+	
 	undelegations := k.stakingKeeper.GetAllUnbondingDelegations(ctx, params.DelegatorAddr)
 	for i := 0; i < len(undelegations); i++ {
 		if undelegations[i].ValidatorAddress == params.ValidatorAddr.String() {
@@ -584,6 +741,7 @@ func queryValidatorDelegationDetail(ctx sdk.Context, req abci.RequestQuery, k Ke
 
 		res, err := codec.MarshalJSONIndent(legacyQuerierCdc, delegationDetail)
 		if err != nil {
+			log.WithError(err).Error("MarshalJSONIndent1")
 			return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 		}
 		return res, nil
@@ -595,28 +753,34 @@ func queryValidatorDelegationDetail(ctx sdk.Context, req abci.RequestQuery, k Ke
 	delegationDetail.UnbindingDelegationAmount = types.MustParseLedgerDec(undelegationAmount)
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, delegationDetail)
 	if err != nil {
+		log.WithError(err).Error("MarshalJSONIndent2")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
 }
 
+
 func queryCopyrightExist(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCopyrightDetailParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	_, err := k.GetCopyright(ctx, params.Hash)
+	
 	if err != nil {
 		return []byte("non-existent"), nil
 	}
 	return []byte("exist"), nil
 }
 
+
 func queryCopyrightDetail(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCopyrightDetailParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -627,10 +791,12 @@ func queryCopyrightDetail(ctx sdk.Context, req abci.RequestQuery, k Keeper, lega
 	return dataBytes, nil
 }
 
+
 func queryOriginDatahashDetail(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCopyrightDetailParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -641,27 +807,34 @@ func queryOriginDatahashDetail(ctx sdk.Context, req abci.RequestQuery, k Keeper,
 	return dataBytes, nil
 }
 
+
 func queryCopyrightPartyExist(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCopyrightPartyParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	bz, err := k.GetCopyrightParty(ctx, params.Creator)
+	
 	if err != nil || len(bz) == 0 {
 		return []byte("non-existent"), nil
 	}
 	return []byte("exist"), nil
 }
 
+//Id
 func queryCopyrightPublishId(ctx sdk.Context, k Keeper) ([]byte, error) {
+	//MAP,,.json,
 	return k.QueryPublisherIdMap(ctx), nil
 }
 
+
 func queryCopyrightParty(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCopyrightPartyParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -672,10 +845,12 @@ func queryCopyrightParty(ctx sdk.Context, req abci.RequestQuery, k Keeper, legac
 	return dataBytes, nil
 }
 
+
 func queryBlockRDS(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryBlockRDSParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
@@ -686,50 +861,50 @@ func queryBlockRDS(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQueri
 	return dataBytes, nil
 }
 
+
 func queryAccountSpaceMiner(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryAccountSpaceMinerParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	accountSpaceMiner := k.QueryAccountSpaceMinerInfor(ctx, params.Account)
 	return util.Json.Marshal(accountSpaceMiner)
 }
 
-func queryDeflationVoteTitle(ctx sdk.Context, k Keeper) ([]byte, error) {
-	rateVot := k.QueryRateVoteTitle(ctx)
-	res, err := util.Json.Marshal(rateVot)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-	return res, nil
-}
-
 func queryDeflationRateInfor(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	deflationRate := keeper.QueryDeflationRate(ctx)
-	voteIndex := keeper.QueryDeflationRateVoteIndex(ctx)
-
 	rateAndVoteIndex := RateAndVoteIndex{
-		DeflationRate:      deflationRate,
-		DeflationVoteIndex: voteIndex,
+		DeflationRate: deflationRate,
 	}
 	return util.Json.Marshal(rateAndVoteIndex)
 }
+
 
 func querySpacefee(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	spaceTotal := keeper.SpaceFeeEstimate(ctx)
 	return []byte(spaceTotal), nil
 }
 
+
 func spaceTotal(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	spaceTotal := keeper.QueryDeflatinSpaceTotal(ctx)
 	return []byte(spaceTotal), nil
 }
 
+
 func spaceAward(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	spaceTotal := keeper.QuerySpaceMinerBonusAmount(ctx)
 	return []byte(spaceTotal.String()), nil
 }
+
+
+func hasMinerBonus(ctx sdk.Context, keeper Keeper) ([]byte, error) {
+	hasMinerBonus := keeper.QueryHasMinerBonusAmount(ctx)
+	return []byte(hasMinerBonus.String()), nil
+}
+
 
 func spaceAmount(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	spaceAmount := keeper.QuerySpaceMinerAmount(ctx)
@@ -737,9 +912,12 @@ func spaceAmount(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 }
 
 func queryDeflationMinerInfor(ctx sdk.Context, keeper Keeper) ([]byte, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	deflationMinerInfor, err := keeper.QueryDeflationMinerInfor(ctx)
+	
 	res, err := util.Json.Marshal(deflationMinerInfor)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil
@@ -747,13 +925,16 @@ func queryDeflationMinerInfor(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 
 func queryNftInfor(ctx sdk.Context, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryNftInforParams
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		log.WithError(err).Error("UnmarshalJSON")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	deflationMinerInfor := keeper.QueryNftInfor(ctx, params.TokenId)
+	
 	res, err := util.Json.Marshal(deflationMinerInfor)
 	if err != nil {
+		log.WithError(err).Error("Marshal")
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 	return res, nil

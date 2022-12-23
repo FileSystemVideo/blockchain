@@ -1,51 +1,51 @@
 package rest
 
 import (
-	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
-	"fs.video/blockchain/x/copyright/types"
-	"fs.video/log"
 	"errors"
+	"fs.video/blockchain/core"
+	"fs.video/blockchain/util"
+	"fs.video/blockchain/x/copyright/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 )
 
-var logPrefix = "Rest"
-
 func CrossChainOutHandlerFn(msgBytes []byte, ctx *client.Context, fee legacytx.StdFee, memo string) error {
-	logPrefix := logPrefix + " | " + util.GetFuncName() + " | "
-	log.Info(logPrefix)
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest)
+
 	var crosschainout types.MsgCrossChainOut
 	err := util.Json.Unmarshal(msgBytes, &crosschainout)
 	if err != nil {
-		log.Error(logPrefix, "Unmarshal error | "+err.Error())
+		log.WithError(err).Error("Unmarshal")
 		return err
 	}
+
+	log.Debug("do")
+
 	amountString, demon, err := util.StringDenom(crosschainout.Coins)
 	if err != nil {
-		log.Error(logPrefix, "StringDenom error | "+err.Error())
+		log.WithError(err).Error("StringDenom")
 		return err
 	}
 	amountDec, err := sdk.NewDecFromStr(amountString)
 	if err != nil {
-		log.Error(logPrefix, "NewDecFromStr error | "+err.Error())
+		log.WithError(err).Error("NewDecFromStr")
 		return err
 	}
-	minAmount := types.MustParseLedgerDec2(sdk.MustNewDecFromStr(config.CrossChainOutMinAmount))
+	minAmount := types.MustParseLedgerDec2(sdk.MustNewDecFromStr(core.CrossChainOutMinAmount))
 	log.Info(amountDec, " < ", minAmount)
 	if amountDec.LT(minAmount) {
-		log.Error(logPrefix, "CrossChainOut Amount too low")
+		log.Error("CrossChainOut Amount too low")
 		return errors.New(CrossChainMinAmountErr)
 	}
 	addr, err := sdk.AccAddressFromBech32(crosschainout.SendAddress)
 	if err != nil {
-		log.Error(logPrefix, "AccAddressFromBech32 error | "+err.Error())
+		log.WithError(err).Error("AccAddressFromBech32")
 		return err
 	}
 	balStatus, errStr := judgeBalance(ctx, addr, amountDec, demon)
 	if !balStatus {
-		log.Error(logPrefix, "judgeBalance error | "+errStr)
+		log.Error("judgeBalance fail")
 		return errors.New(errStr)
 	}
 

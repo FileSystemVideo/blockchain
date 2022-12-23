@@ -1,49 +1,46 @@
 package rest
 
 import (
-	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
-	"fs.video/blockchain/x/copyright/types"
-	logs "fs.video/log"
 	"errors"
+	"fs.video/blockchain/core"
+	"fs.video/blockchain/util"
+	"fs.video/blockchain/x/copyright/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
-	types2 "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 
 func TransferHandlerFn(msgBytes []byte, ctx *client.Context, fee legacytx.StdFee, memo string) error {
-	logPrefix := logPrefix + " | " + util.GetFuncName() + " | "
-	logs.Info(logPrefix)
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest)
+
 	var transfer types.MsgTransfer
 	err := util.Json.Unmarshal(msgBytes, &transfer)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error1 | ", err.Error())
+		log.WithError(err).Error("Unmarshal1")
 		return err
 	}
+
+	log.Debug("do")
+
 	fromAccount, err := sdk.AccAddressFromBech32(transfer.FromAddress)
 	if err != nil {
-		logs.Error(logPrefix, "AccAddressFromBech32 error1 | ", err.Error())
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return errors.New(ParseAccountError)
 	}
 
-	if transfer.ToAddress != config.ContractAddressDestory.String() {
+	if transfer.ToAddress != core.ContractAddressDestory.String() {
 		_, err = sdk.AccAddressFromBech32(transfer.ToAddress)
 		if err != nil {
-			logs.Error(logPrefix, "AccAddressFromBech32 error2 | ", err.Error())
+			log.WithError(err).Error("AccAddressFromBech32 2")
 			return errors.New(ParseAccountError)
 		}
 	}
-	lockFlag := types2.JudgeLockedAccount(transfer.FromAddress)
-	if lockFlag {
-		return sdkerrors.ErrLockedAccount
-	}
+
 	var realCoins types.RealCoins
 	err = util.Json.Unmarshal([]byte(transfer.Coins), &realCoins)
 	if err != nil {
-		logs.Error(logPrefix, "Unmarshal error2 | ", err.Error())
+		log.WithError(err).Error("Unmarshal2")
 		return err
 	}
 	for i := 0; i < len(realCoins); i++ {
@@ -53,20 +50,20 @@ func TransferHandlerFn(msgBytes []byte, ctx *client.Context, fee legacytx.StdFee
 		}
 	}
 	ledgeCoins := types.MustRealCoins2LedgerCoins(realCoins)
-	feeCoins := types.NewLedgerCoins(config.CopyrightInviteFee)
+	feeCoins := types.NewLedgerCoins(core.CopyrightInviteFee)
 	isFsv := false
 	isTip := false
 	for _, coin := range ledgeCoins {
-		if coin.Denom == config.MainToken {
+		if coin.Denom == core.MainToken {
 			isFsv = true
 		}
-		if coin.Denom == config.InviteToken {
+		if coin.Denom == core.InviteToken {
 			isTip = true
 		}
 	}
 	for _, coin := range ledgeCoins {
-		if coin.Denom == config.MainToken {
-			minTransfer := types.NewLedgerCoin(config.MinFsvTransfer)
+		if coin.Denom == core.MainToken {
+			minTransfer := types.NewLedgerCoin(core.MinFsvTransfer)
 			if coin.IsLT(minTransfer) && !coin.IsEqual(feeCoins[0]) {
 				return errors.New(InvalidAmountErr)
 			}
@@ -76,15 +73,16 @@ func TransferHandlerFn(msgBytes []byte, ctx *client.Context, fee legacytx.StdFee
 				}
 			}
 		}
-
+		
 		balStatus, errStr := judgeBalance(ctx, fromAccount, coin.Amount.ToDec(), coin.Denom)
 		if !balStatus {
-			logs.Error(logPrefix, "judgeBalance error | ", err.Error())
+			log.WithField("err", errStr).Error("judgeBalance fail")
 			return errors.New(errStr)
 		}
 	}
-
+	//fsv
 	if !isFsv {
+		log.Warn("InvalidAmountErr")
 		return errors.New(InvalidAmountErr)
 	}
 	return nil

@@ -2,7 +2,7 @@ package rest
 
 import (
 	"errors"
-	"fs.video/blockchain/x/copyright/config"
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/x/copyright/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,6 +20,7 @@ func AccountNumberSeqHandlerFn(clientCtx client.Context) http.HandlerFunc {
 		res := types.AccountNumberSeqResponse{
 			AccountNumber: 0,
 			Sequence:      0,
+			NotFound:      false,
 		}
 		res.Status = 1
 		res.Info = ""
@@ -35,11 +36,12 @@ func AccountNumberSeqHandlerFn(clientCtx client.Context) http.HandlerFunc {
 
 		accountNumber, sequence, err := clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, addr)
 		if err != nil {
-
+			
 			if strings.Contains(err.Error(), "not found: key not found") {
 				res.Status = 1
 				res.Sequence = 0
 				res.AccountNumber = 0
+				res.NotFound = true
 			} else {
 				res.Status = 0
 				res.Info = err.Error()
@@ -57,14 +59,16 @@ func AccountNumberSeqHandlerFn(clientCtx client.Context) http.HandlerFunc {
 
 
 func judgeBalance(cliCtx *client.Context, address sdk.AccAddress, amount sdk.Dec, denom string) (bool, string) {
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest).WithField("addr", address.String())
 	coin, err := grpcQueryBalance(cliCtx, address, denom)
 	if err != nil {
+		log.WithError(err).Error("grpcQueryBalance")
 		return false, err.Error()
 	}
 
+	//log.Debug("", coin.String())
 
-
+	
 	if sdk.NewDecFromInt(coin.Amount).GTE(amount) {
 		return true, ""
 	}
@@ -73,6 +77,7 @@ func judgeBalance(cliCtx *client.Context, address sdk.AccAddress, amount sdk.Dec
 }
 
 func judgeFee(ctx *client.Context, account sdk.AccAddress, fee legacytx.StdFee) error {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest).WithField("addr", account.String())
 	var feeDec sdk.Dec
 	if fee.Amount.Len() > 0 {
 		for i := 0; i < fee.Amount.Len(); i++ {
@@ -83,18 +88,21 @@ func judgeFee(ctx *client.Context, account sdk.AccAddress, fee legacytx.StdFee) 
 			}
 		}
 	} else {
+		log.Warn("FeeCannotEmpty")
 		return errors.New(FeeCannotEmpty)
 	}
 	if feeDec.IsZero() {
+		log.Warn("FeeZero")
 		return errors.New(FeeZero)
 	}
-
-	payAmount := types.NewLedgerDec(config.CopyrightFee)
+	
+	payAmount := types.NewLedgerDec(core.ChainDefaultFee)
 	if feeDec.LT(payAmount) {
-		return errors.New(FeeIsTooLess)
+		log.Warn("FeeIsTooLess")
+		return errors.New(FeeIsTooLess) 
 	}
 
-	balStatus, errStr := judgeBalance(ctx, account, payAmount, config.MainToken)
+	balStatus, errStr := judgeBalance(ctx, account, payAmount, core.MainToken)
 	if !balStatus {
 		return errors.New(errStr)
 	}

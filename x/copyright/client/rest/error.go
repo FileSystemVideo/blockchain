@@ -147,4 +147,5 @@ var (
 	ApproveNotVote                     = "The resource is not in the approval period"
 	CrossChainMinAmountErr             = "Minimum amount 50fsv"
 	InvalidAmountErr                   = "invalid amount"
+	NoMinerBonusClain                  = "There is no mining income to be claimed"
 )

@@ -1,26 +1,26 @@
 package rest
 
 import (
+	"errors"
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
 	"fs.video/blockchain/x/copyright/types"
 	"fs.video/trerr"
-	"encoding/hex"
-	"errors"
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkErrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/gogo/protobuf/proto"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"strings"
 )
 
-//对签名后的tx进行广播，并返回结果
+//tx，
 func BroadcastTxHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest)
 	return func(w http.ResponseWriter, r *http.Request) {
 		var txBytes []byte
 		if r.Body != nil {
@@ -32,17 +32,17 @@ func BroadcastTxHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			TxHash:       "",
 			Height:       0,
 		}
-		tx, _ := clientCtx.TxConfig.TxDecoder()(txBytes) //字节编码成基础tx
-		stdTx, err := txToStdTx(clientCtx, tx)           //基础tx转成  stdTx
+		tx, _ := clientCtx.TxConfig.TxDecoder()(txBytes) //tx
+		stdTx, err := txToStdTx(clientCtx, tx)           //tx  stdTx
 		if err != nil {
 			txResponse.Info = err.Error()
 			SendReponse(w, clientCtx, txResponse)
 			return
 		}
-		msgs := stdTx.GetMsgs() //tx包含的消息列表
-		fee := stdTx.Fee        //tx支付的手续费
-		memo := stdTx.Memo      //tx的备注
-		//业务校验
+		msgs := stdTx.GetMsgs() //tx
+		fee := stdTx.Fee        //tx
+		memo := stdTx.Memo      //tx
+		
 		err = broadcastMsgCheck(msgs, fee, memo)
 		if err != nil {
 			errmsg := trerr.TransError(err.Error())
@@ -56,8 +56,14 @@ func BroadcastTxHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			SendReponse(w, clientCtx, txResponse)
 			return
 		}
-		fmt.Println("广播返回:", res, ",code:", res.Code)
-		if res.Code == 0 { //code=0 表示没有错误
+		log.WithFields(logrus.Fields{
+			"txhash": res.TxHash,
+			"rawlog": res.RawLog,
+			"code":   res.Code,
+			"logs":   res.Logs,
+		}).Info("result")
+
+		if res.Code == 0 { //code=0 
 			txResponse.Status = 1
 		} else {
 			txResponse.Status = 0
@@ -72,16 +78,16 @@ func BroadcastTxHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	}
 }
 
-//解析code、codeSpace、rowlog 返回错误信息
+//code、codeSpace、rowlog 
 func parseErrorCode(code uint32, codeSpace string, rowlog string) string {
 	if codeSpace == sdkErrors.RootCodespace {
-		if code == sdkErrors.ErrInsufficientFee.ABCICode() { //手续费不足
+		if code == sdkErrors.ErrInsufficientFee.ABCICode() { 
 			return FeeIsTooLess
-		} else if code == sdkErrors.ErrOutOfGas.ABCICode() { //消耗的gas超出了客户端设定的上限
+		} else if code == sdkErrors.ErrOutOfGas.ABCICode() { //gas
 			return ErrorGasOut
-		} else if code == sdkErrors.ErrUnauthorized.ABCICode() { //链id或者account number 错误
+		} else if code == sdkErrors.ErrUnauthorized.ABCICode() { //idaccount number 
 			return ErrUnauthorized
-		} else if code == sdkErrors.ErrWrongSequence.ABCICode() { //账号序列号错误
+		} else if code == sdkErrors.ErrWrongSequence.ABCICode() { 
 			return ErrWrongSequence
 		}
 	}
@@ -90,8 +96,8 @@ func parseErrorCode(code uint32, codeSpace string, rowlog string) string {
 
 func broadcastMsgCheck(msgs []sdk.Msg, fee legacytx.StdFee, memo string) (err error) {
 	for _, msg := range msgs {
-		msgType := msg.Type()
-		if txHandles.HaveRegistered(msgType) { //检查该消息类型是否已经注册
+		msgType := proto.MessageName(msg)
+		if txHandles.HaveRegistered(msgType) { 
 			msgByte, err := util.Json.Marshal(msg)
 			if err != nil {
 				return err
@@ -105,55 +111,10 @@ func broadcastMsgCheck(msgs []sdk.Msg, fee legacytx.StdFee, memo string) (err er
 	return nil
 }
 
-//解析TX里面包含的msg列表
-func ParseTxMsgs(clientCtx client.Context, txhashBytes []byte) ([]sdk.Msg, string, error) {
-	txhashHex := strings.ToUpper(hex.EncodeToString(txhashBytes))
-	output, err := authclient.QueryTx(clientCtx, txhashHex)
-	if err != nil {
-		return nil, "", err
-	}
-	txBytes := output.Tx.Value
-	txI, err := clientCtx.TxConfig.TxDecoder()(txBytes)
-	if err != nil {
-		return nil, "", err
-	}
-	tx, ok := txI.(signing.Tx)
-	if !ok {
-		return nil, "", err
-	}
-
-	stdTx, err := clienttx.ConvertTxToStdTx(clientCtx.LegacyAmino, tx)
-	if !ok {
-		return nil, "", err
-	}
-	return stdTx.GetMsgs(), txhashHex, nil
-}
-
-/**
-根据tx的字节码解析为 StdTx 结构体
-*/
-func bytesToStdTx(clientCtx client.Context, txhashBytes []byte) (*legacytx.StdTx, string, error) {
-	txhashHex := strings.ToUpper(hex.EncodeToString(txhashBytes))
-	output, err := authclient.QueryTx(clientCtx, txhashHex)
-	if err != nil {
-		return nil, "", err
-	}
-	txBytes := output.Tx.Value
-	tx, err := clientCtx.TxConfig.TxDecoder()(txBytes)
-	if err != nil {
-		return nil, "", err
-	}
-	stdTx, err := txToStdTx(clientCtx, tx)
-	if err != nil {
-		return nil, "", err
-	}
-	return stdTx, txhashHex, nil
-}
-
 func txToStdTx(clientCtx client.Context, tx sdk.Tx) (*legacytx.StdTx, error) {
 	signingTx, ok := tx.(signing.Tx)
 	if !ok {
-		return nil, errors.New("tx转stdtx失败")
+		return nil, errors.New("txstdtx")
 	}
 	stdTx, err := clienttx.ConvertTxToStdTx(clientCtx.LegacyAmino, signingTx)
 	if err != nil {

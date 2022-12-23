@@ -2,10 +2,10 @@ package keeper
 
 import (
 	"context"
+	"errors"
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
 	"fs.video/blockchain/x/copyright/types"
-	logs "fs.video/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	cid2 "github.com/ipfs/go-cid"
@@ -14,35 +14,39 @@ import (
 	"github.com/ipfs/go-unixfs"
 	ipath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"path"
 	"sort"
 	"strings"
 	"time"
 )
 
+
 type CopyrightVoteShareInfor struct {
 	FavorTotal   decimal.Decimal `json:"favor_total"`
 	AgainstTotal decimal.Decimal `json:"against_total"`
 }
+
 
 type DataHashVote struct {
 	Status int             `json:"status"`
 	Power  decimal.Decimal `json:"power"`
 }
 
+
 type AccountVoteInfor struct {
-	Account   string          `json:"account"`
+	Account   string          `json:"account"` 
 	Txhash    string          `json:"txhash"`
-	Power     decimal.Decimal `json:"power"`
-	MortgTime time.Time       `json:"mortg_time"`
-	Status    int             `json:"status"`
+	Power     decimal.Decimal `json:"power"`      
+	MortgTime time.Time       `json:"mortg_time"` 
+	Status    int             `json:"status"`     
 }
 
 const (
-	copyrightApproveForResult = "copyright-approve-infor-"
-	copyrightVoteFor          = "copyright-vote-infor-"
-	copyrightVoteListFor      = "copyright-vote-list-infor-"
-	copyrightVoteRedeem       = "copyright-vote-redeem-"
+	copyrightApproveForResult = "copyright-approve-infor-"   
+	copyrightVoteFor          = "copyright-vote-infor-"      
+	copyrightVoteListFor      = "copyright-vote-list-infor-" 
+	copyrightVoteRedeem       = "copyright-vote-redeem-"     
 )
 
 type CopyrightResult struct {
@@ -50,7 +54,9 @@ type CopyrightResult struct {
 	CreateTime time.Time `json:"create_time"`
 }
 
+
 func (k Keeper) CopyrightVoteRedeem(ctx sdk.Context) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	copyrightVoteRedeemHash := k.GetCopyrightVoteRedeem(ctx)
 	if copyrightVoteRedeemHash != "" {
 		voteHashArray := strings.Split(copyrightVoteRedeemHash, "|")
@@ -58,76 +64,92 @@ func (k Keeper) CopyrightVoteRedeem(ctx sdk.Context) {
 			voteHash := voteHashArray[i]
 			accountVoteListInfor, err := k.QueryAccountCopyrightVoteList(ctx, voteHash)
 			if err != nil {
-				logs.Error("query vote infor error", err)
 				return
 			}
-			var editorFlag bool
-			var redeemNum int
+			
+			var editorFlag bool 
+			var redeemNum int   
 			for j := 0; j < len(accountVoteListInfor); j++ {
 				accountVoteInfor := accountVoteListInfor[j]
-				if accountVoteInfor.Status == 1 {
+				if accountVoteInfor.Status == 1 { 
 					redeemNum += 1
 					continue
 				}
-				endTime := accountVoteInfor.MortgTime.Add(config.CopyrightVoteRedeemTimePerioad)
-				if endTime.After(ctx.BlockTime()) {
+				endTime := accountVoteInfor.MortgTime.Add(core.CopyrightVoteRedeemTimePerioad)
+				if endTime.After(ctx.BlockTime()) { 
 					continue
 				}
+				
 				accountAddress, err := sdk.AccAddressFromBech32(accountVoteInfor.Account)
 				if err != nil {
-					logs.Error("format account error", err)
+					log.WithError(err).WithField("Account", accountVoteInfor.Account).Error("AccAddressFromBech32")
 					return
 				}
-				floatPower, _ := accountVoteInfor.Power.Float64()
-				powerDec := types.NewLedgerDec(floatPower)
+				powerDec := types.NewLedgerDec(accountVoteInfor.Power)
 				err = k.stakingKeeper.UnDelegationFreeze(ctx, accountAddress, powerDec)
 				if err != nil {
-					logs.Error("format account error", err)
+					log.WithError(err).Error("UnDelegationFreeze")
 					return
 				}
 				accountVoteInfor.Status = 1
 				accountVoteListInfor[j] = accountVoteInfor
 				redeemNum += 1
 				editorFlag = true
+				
 				copyrightVoteRedeem := types.CopyrightVoteRedeem{}
 				copyrightVoteRedeem.BlockNum = ctx.BlockHeight()
 				copyrightVoteRedeem.TimeStemp = ctx.BlockTime().Unix()
 				copyrightVoteRedeem.DataHash = voteHash
 				copyrightVoteRedeem.TxHash = accountVoteInfor.Txhash
-				k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVoteRedeem))
+				//rd ,
+				err = k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVoteRedeem))
+				if err != nil {
+					log.WithError(err).Error("AddBlockRDS-copyrightVoteRedeem")
+					panic(err)
+				}
 			}
-			if editorFlag {
-				k.UpdateAccountCopyrightVoteList(ctx, voteHash, accountVoteListInfor)
+			if editorFlag { 
+				err = k.UpdateAccountCopyrightVoteList(ctx, voteHash, accountVoteListInfor)
+				if err != nil {
+					panic(err)
+				}
 			}
-			if redeemNum == len(accountVoteListInfor) {
-				k.RemoveFromCopyrightVoteRedeem(ctx, voteHash)
+			if redeemNum == len(accountVoteListInfor) { 
+				err = k.RemoveFromCopyrightVoteRedeem(ctx, voteHash)
+				if err != nil {
+					panic(err)
+				}
 			}
 
 		}
 	}
 }
 
+
 func (k Keeper) CalculateCopyrightVoteResult(ctx sdk.Context) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	copyrightResult, err := k.GetCopyrightVoteForResult(ctx)
 	if err != nil {
-		logs.Error("query copyright infor error", err)
 		panic(err)
 	}
+	
 	for i := 0; i < len(copyrightResult); i++ {
 		copyrightResult := copyrightResult[i]
-		endTime := copyrightResult.CreateTime.Add(config.CopyrightVoteTimePerioad)
-		if endTime.After(ctx.BlockTime()) { //版权审核还未到结束时间
+		endTime := copyrightResult.CreateTime.Add(core.CopyrightVoteTimePerioad)
+		if endTime.After(ctx.BlockTime()) { 
 			return
 		}
+		
 		store := k.KVHelper(ctx)
 		copyrightVoteInfor := make(map[string]CopyrightVoteShareInfor, 0)
 		copyrightVoteByte := store.Get(copyrightVoteFor + copyrightResult.DataHash)
 		if copyrightVoteByte != nil {
 			err := util.Json.Unmarshal(copyrightVoteByte, &copyrightVoteInfor)
 			if err != nil {
-				return
+				log.WithError(err).Error("Unmarshal")
+				panic(err)
 			}
-		} else {
+		} else { 
 			copyrightApprove := types.CopyrightApprove{}
 			copyrightApprove.BlockNum = ctx.BlockHeight()
 			copyrightApprove.TimeStemp = ctx.BlockTime().Unix()
@@ -137,53 +159,71 @@ func (k Keeper) CalculateCopyrightVoteResult(ctx sdk.Context) {
 
 			copyrighDataByte, err := k.GetCopyright(ctx, copyrightResult.DataHash)
 			if err != nil {
-				logs.Error("query copyright infor error", err)
 				panic(err)
 			}
 			var copyrightData types.CopyrightData
 			err = util.Json.Unmarshal(copyrighDataByte, &copyrightData)
 			if err != nil {
-				logs.Error("format data error", err)
+				log.WithError(err).Error("Unmarshal")
 				panic(err)
 			}
+			
 			flag := k.UpdateAccountSpace(ctx, copyrightData.Creator, copyrightData.Size)
 			if !flag {
-				logs.Error("format data error", types.AccountSpaceReturnError)
+				log.WithError(err).WithFields(logrus.Fields{
+					"address": copyrightData.Creator.String(),
+					"size":    copyrightData.Size,
+				}).Error("UpdateAccountSpace")
 				panic(err)
 			}
 			err = k.DeleteCopyrightInfor(ctx, copyrightResult.DataHash)
 			if err != nil {
-				logs.Error("delete data error", err)
 				panic(err)
 			}
 			copyrightApprove.Creator = copyrightData.Creator.String()
-			k.AddBlockRDS(ctx, types.NewBlockRD(copyrightApprove))
-			k.RemoveFromCopyrightDataHash(ctx, copyrightResult.DataHash)
+			//rd ,
+			err = k.AddBlockRDS(ctx, types.NewBlockRD(copyrightApprove))
+			if err != nil {
+				log.WithError(err).Error("AddBlockRDS-copyrightApprove")
+				panic(err)
+			}
+			
+			err = k.RemoveFromCopyrightDataHash(ctx, copyrightResult.DataHash)
+			if err != nil {
+				panic(err)
+			}
 			continue
 		}
 		var linkMapKeySlice []string
+		//map key
 		for key, _ := range copyrightVoteInfor {
 			linkMapKeySlice = append(linkMapKeySlice, key)
 		}
 		sort.Strings(linkMapKeySlice)
 		var abandonHash []string
 		for i := 0; i < len(linkMapKeySlice); i++ {
-			key := linkMapKeySlice[i] //cid
+			key := linkMapKeySlice[i] //cid hash
 			voteInfor := copyrightVoteInfor[key]
 			if voteInfor.FavorTotal.LessThanOrEqual(voteInfor.AgainstTotal) {
+				
 				abandonHash = append(abandonHash, key)
 			}
 		}
+		
 		err = k.copyrightApprovedDeal(ctx, copyrightResult.DataHash, abandonHash)
 		if err != nil {
-			logs.Error("deal copyright error", err)
 			panic(err)
 		}
 	}
 }
 
-
+/*
+	
+ 	datahash hash
+ 	abandonHash hash
+*/
 func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonHash []string) error {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	copyrightApprove := types.CopyrightApprove{}
 	copyrightApprove.BlockNum = ctx.BlockHeight()
 	copyrightApprove.TimeStemp = ctx.BlockTime().Unix()
@@ -195,10 +235,11 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 	var copyrightData types.CopyrightData
 	err := util.Json.Unmarshal(copyrightBytes, &copyrightData)
 	if err != nil {
+		log.WithError(err).Error("Unmarshal")
 		return err
 	}
 	copyrightApprove.Creator = copyrightData.Creator.String()
-	if len(abandonHash) > 0 {
+	if len(abandonHash) > 0 { 
 		var removeName []string
 		linkMap := copyrightData.LinkMap
 		for i := 0; i < len(abandonHash); i++ {
@@ -222,9 +263,11 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 			}
 		}
 
-		if len(linkMap) > 0 {
+		
+		if len(linkMap) > 0 { 
 
 			var linkMapKeySlice []string
+			//map key
 			for key, _ := range linkMap {
 				linkMapKeySlice = append(linkMapKeySlice, key)
 			}
@@ -238,7 +281,7 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 				link := linkMap[key]
 				cid, err := cid2.Parse(link.Cid)
 				if err != nil {
-					logs.Error("query cid error", err)
+					log.WithError(err).Error("cid2.Parse")
 					panic(err)
 				}
 				node1.AddRawLink(link.Name, &format.Link{
@@ -250,13 +293,13 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 			}
 			err = dagService.Add(context.Background(), node1)
 			if err != nil {
-				logs.Error("6", err)
+				log.WithError(err).Error("dagService.Add")
 				panic(err)
 			}
 			getDagHash := func(editor *dagutils.Editor) string {
 				nnode, err := editor.Finalize(context.Background(), dagService)
 				if err != nil {
-					logs.Error("serilize data error", err)
+					log.WithError(err).Error("editor.Finalize")
 					return ""
 				}
 				newHash := ipath.IpfsPath(nnode.Cid())
@@ -265,12 +308,12 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 			e := dagutils.NewDagEditor(node1, dagService)
 			newHash := getDagHash(e)
 			if newHash == "" {
-				logs.Error("build data error", newHash)
-				panic(err)
+				log.WithError(err).Error("getDagHash")
+				panic(errors.New("getDagHash error"))
 			}
 			nodeBytes, err := node1.MarshalJSON()
 			if err != nil {
-				logs.Error("build data error", newHash)
+				log.WithError(err).Error("MarshalJSON")
 				panic(err)
 			}
 			newHash = strings.Replace(newHash, "/ipfs/", "", 1)
@@ -287,23 +330,25 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 			if err != nil {
 				return err
 			}
+			//,hash
 			err = k.UpdateCopyrightInfor(ctx, newHash, datahash, newSize)
 			if err != nil {
 				return err
 			}
-		} else {
+		} else { 
 			copyrightApprove.Status = 2
 			copyrightApprove.DataHash = datahash
 			err = k.DeleteCopyrightInfor(ctx, datahash)
 			if err != nil {
 				return err
 			}
+			
 			flag := k.UpdateAccountSpace(ctx, copyrightData.Creator, copyrightData.Size)
 			if !flag {
 				return types.AccountSpaceReturnError
 			}
 		}
-	} else {
+	} else { 
 		copyrightApprove.Status = 1
 		copyrightApprove.DataHash = datahash
 		err := k.UpdateCopyrightStatus(ctx, datahash, 1)
@@ -311,19 +356,30 @@ func (k Keeper) copyrightApprovedDeal(ctx sdk.Context, datahash string, abandonH
 			return err
 		}
 	}
-	k.AddBlockRDS(ctx, types.NewBlockRD(copyrightApprove))
-	k.RemoveFromCopyrightDataHash(ctx, datahash)
-	return nil
+	//rd ,
+	err = k.AddBlockRDS(ctx, types.NewBlockRD(copyrightApprove))
+	if err != nil {
+		log.WithError(err).Error("AddBlockRDS-copyrightApprove")
+	}
+	
+	store.Delete(copyrightVoteFor + datahash)
+
+	
+	return k.RemoveFromCopyrightDataHash(ctx, datahash)
 }
 
-
+/**
+dataPower ,
+*/
 func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrightHash, dataPower, txhash string, linkMap map[string]types.Link) error {
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	var dataVoteMap map[string]DataHashVote
 	err := util.Json.Unmarshal([]byte(dataPower), &dataVoteMap)
 	if err != nil {
+		log.WithError(err).Error("Unmarshal1")
 		return err
 	}
+	
 	store := k.KVHelper(ctx)
 	voteKey := copyrightVoteFor + copyrightHash
 	copyrightVoteInfor := make(map[string]CopyrightVoteShareInfor, 0)
@@ -331,28 +387,32 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 	if copyrightVoteByte != nil {
 		err := util.Json.Unmarshal(copyrightVoteByte, &copyrightVoteInfor)
 		if err != nil {
+			log.WithError(err).Error("Unmarshal2")
 			return err
 		}
 	}
 	var linkMapKeySlice []string
+	//map key
 	for key, _ := range linkMap {
 		linkMapKeySlice = append(linkMapKeySlice, key)
 	}
 	sort.Strings(linkMapKeySlice)
-	var totalVote decimal.Decimal
+	
+	var totalVote decimal.Decimal 
 	for _, linkKey := range linkMapKeySlice {
 		link := linkMap[linkKey]
 		key := link.Cid
 		if vote, ok := copyrightVoteInfor[key]; ok {
+			
 			if dataVote, ok := dataVoteMap[key]; ok {
-				if dataVote.Status == 1 {
+				if dataVote.Status == 1 { 
 					vote.FavorTotal = vote.FavorTotal.Add(dataVote.Power)
 				} else {
 					vote.AgainstTotal = vote.AgainstTotal.Add(dataVote.Power)
 				}
 				copyrightVoteInfor[key] = vote
 				totalVote = totalVote.Add(dataVote.Power)
-				award := getVoteAward(ctx,dataVote.Power)
+				award := getVoteAward(ctx, dataVote.Power)
 				copyrightVote := types.CopyrightVote{
 					DataHash:   copyrightHash,
 					VideoHash:  key,
@@ -363,10 +423,13 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 					TxHash:     txhash,
 					Account:    account,
 					VoteStatus: dataVote.Status,
-					Award:      util.DecimalStringFixed(award.String(), config.CoinPlaces),
+					Award:      util.DecimalStringFixed(award.String(), core.CoinPlaces),
 					Power:      dataVote.Power.String(),
 				}
-				k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVote))
+				err = k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVote))
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if dataVote, ok := dataVoteMap[key]; ok {
@@ -374,14 +437,14 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 					FavorTotal:   decimal.Zero,
 					AgainstTotal: decimal.Zero,
 				}
-				if dataVote.Status == 1 {
+				if dataVote.Status == 1 { 
 					defaultVote.FavorTotal = dataVote.Power
 				} else {
 					defaultVote.AgainstTotal = dataVote.Power
 				}
 				copyrightVoteInfor[key] = defaultVote
 				totalVote = totalVote.Add(dataVote.Power)
-				award := getVoteAward(ctx,dataVote.Power)
+				award := getVoteAward(ctx, dataVote.Power)
 				copyrightVote := types.CopyrightVote{
 					DataHash:   copyrightHash,
 					VideoHash:  key,
@@ -392,18 +455,23 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 					TxHash:     txhash,
 					Account:    account,
 					VoteStatus: dataVote.Status,
-					Award:      util.DecimalStringFixed(award.String(), config.CoinPlaces),
+					Award:      util.DecimalStringFixed(award.String(), core.CoinPlaces),
 					Power:      dataVote.Power.String(),
 				}
-				k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVote))
+				err = k.AddBlockRDS(ctx, types.NewBlockRD(copyrightVote))
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 	if totalVote.GreaterThan(decimal.Zero) {
 		err = store.Set(voteKey, copyrightVoteInfor)
 		if err != nil {
+			log.WithError(err).Error("store.Set")
 			return err
 		}
+		
 		copyrightVoteListInfor, err := k.QueryAccountCopyrightVoteList(ctx, copyrightHash)
 		if err != nil {
 			return err
@@ -418,68 +486,92 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 		copyrightVoteListInfor = append(copyrightVoteListInfor, accountVoteInfor)
 		copyrightVoteListByte, err := util.Json.Marshal(copyrightVoteListInfor)
 		if err != nil {
+			log.WithError(err).Error("Marshal1")
 			return err
 		}
-		store.Set(copyrightVoteListKey, copyrightVoteListByte)
+		err = store.Set(copyrightVoteListKey, copyrightVoteListByte)
+		if err != nil {
+			log.WithError(err).Error("Marshal2")
+			return err
+		}
+		
 		k.SetCopyrightVoteRedeem(ctx, copyrightHash)
+		//staking 
 		accountAddress, err := sdk.AccAddressFromBech32(accountVoteInfor.Account)
 		if err != nil {
-			logs.Error("format account error", err)
+			log.WithError(err).WithField("Account", accountVoteInfor.Account).Error("AccAddressFromBech32")
 			return err
 		}
-		floatPower, _ := accountVoteInfor.Power.Float64()
-		powerDec := types.NewLedgerDec(floatPower)
-		totalShares, _ := k.GetAccountDelegatorShares(ctx, accountAddress)
-		totalSharesFloat, _ := decimal.RequireFromString(totalShares).Float64()
-		totalSharesLedge := types.NewLedgerDec(totalSharesFloat)
-		freezeShares, err := k.stakingKeeper.GetDelegationFreeze(ctx, accountAddress)
-		if totalSharesLedge.Sub(freezeShares).LT(powerDec) {
+		//floatPower, _ := accountVoteInfor.Power.Float64()
+		powerDec := types.NewLedgerDec(accountVoteInfor.Power)
+		totalShares, _ := k.GetAccountDelegatorShares(ctx, accountAddress) //dpos
+		totalSharesDecimal := decimal.RequireFromString(totalShares)
+
+		totalSharesLedge := types.NewLedgerDec(totalSharesDecimal)
+		freezeShares, _ := k.stakingKeeper.GetDelegationFreeze(ctx, accountAddress) 
+
+		if totalSharesLedge.Sub(freezeShares).LT(powerDec) { // -  < 
 			return types.CopyrightVoteNotEnoughErr
 		}
 		err = k.stakingKeeper.DelegationFreeze(ctx, accountAddress, powerDec)
 		if err != nil {
-			logs.Error("format account error", err)
+			log.WithError(err).Error("DelegationFreeze")
 			return err
 		}
-		award := getVoteAward(ctx,totalVote)
-		awardString := util.DecimalStringFixed(award.String(), config.CoinPlaces)
+		
+		//award := totalVote.Mul(config.CopyrightVoteAwardRate)
+		award := getVoteAward(ctx, totalVote)
+		awardString := util.DecimalStringFixed(award.String(), core.CoinPlaces)
 		realCoin := types.NewRealCoinFromStr(sdk.DefaultBondDenom, awardString)
 		ledgerCoin := types.MustRealCoin2LedgerCoin(realCoin)
 
-		copntractAddress := authtypes.NewModuleAddress(config.KeyCopyrighDeflation)
-		if !k.CoinKeeper.HasBalance(ctx,copntractAddress,ledgerCoin){
-			ledgerCoin = k.CoinKeeper.GetBalance(ctx,copntractAddress,sdk.DefaultBondDenom)
+		copntractAddress := authtypes.NewModuleAddress(core.KeyCopyrighDeflation)
+		
+		if !k.CoinKeeper.HasBalance(ctx, copntractAddress, ledgerCoin) {
+			ledgerCoin = k.CoinKeeper.GetBalance(ctx, copntractAddress, sdk.DefaultBondDenom)
 		}
-		if !ledgerCoin.IsPositive(){
+		
+		if !ledgerCoin.IsPositive() {
 			return nil
 		}
-		err = k.CoinKeeper.SendCoinsFromModuleToAccount(ctx, config.KeyCopyrighDeflation, accountAddress, sdk.NewCoins(ledgerCoin))
+		err = k.CoinKeeper.SendCoinsFromModuleToAccount(ctx, core.KeyCopyrighDeflation, accountAddress, sdk.NewCoins(ledgerCoin))
 		if err != nil {
-			logs.Error("vote award error", err)
+			log.WithError(err).WithFields(logrus.Fields{
+				"fromAddr": core.KeyCopyrighDeflation,
+				"toAddr":   accountAddress.String(),
+				"amt":      ledgerCoin.String(),
+			}).Error("SendCoins")
 			return err
 		}
+		
 		awardDecimal := decimal.RequireFromString(awardString)
-		k.UpdateDeflationMinerInforByVote(ctx,awardDecimal)
+		k.UpdateDeflationMinerInforByVote(ctx, awardDecimal)
+		
 		err = k.SetSpaceMinerBonusAmount(ctx, awardDecimal)
 		if err != nil {
 			return err
 		}
+		
 		feeCoin := types.NewRealCoinFromStr(sdk.DefaultBondDenom, "0")
 		voteAwardTradeInfor := types.TradeInfor{
 			From:           copntractAddress.String(),
 			To:             account,
 			Txhash:         txhash,
-			TradeType:      types.TradeTypeCopyrightVoteReward,
+			TradeType:      core.TradeTypeCopyrightVoteReward,
 			Amount:         realCoin,
 			Fee:            feeCoin,
 			BlockNum:       ctx.BlockHeight(),
 			TimeStemp:      ctx.BlockTime().Unix(),
-			FromFsvBalance: k.GetBalance(ctx, config.MainToken, copntractAddress),
-			FromTipBalance: k.GetBalance(ctx, config.InviteToken, copntractAddress),
-			ToFsvBalance:   k.GetBalance(ctx, config.MainToken, accountAddress),
-			ToTipBalance:   k.GetBalance(ctx, config.InviteToken, accountAddress),
+			FromFsvBalance: k.GetBalance(ctx, core.MainToken, copntractAddress),
+			FromTipBalance: k.GetBalance(ctx, core.InviteToken, copntractAddress),
+			ToFsvBalance:   k.GetBalance(ctx, core.MainToken, accountAddress),
+			ToTipBalance:   k.GetBalance(ctx, core.InviteToken, accountAddress),
 		}
-		k.AddBlockRDS(ctx, types.NewBlockRD(voteAwardTradeInfor))
+		err = k.AddBlockRDS(ctx, types.NewBlockRD(voteAwardTradeInfor))
+		if err != nil {
+			log.WithError(err).Error("AddBlockRDS-voteAwardTradeInfor")
+			return err
+		}
 		return nil
 	} else {
 		return types.CopyrightVoteInvalidErr
@@ -487,22 +579,35 @@ func (k Keeper) dealCopyrightVote(ctx sdk.Context, account, sourceName, copyrigh
 
 }
 
+
 func (k Keeper) SetCopyrightVoteRedeem(ctx sdk.Context, dataHash string) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
+	var err error
 	copyrightVoteRedeemByte := store.Get(copyrightVoteRedeem)
 	if copyrightVoteRedeemByte == nil {
-		store.Set(copyrightVoteRedeem, dataHash)
+		err = store.Set(copyrightVoteRedeem, dataHash)
+		if err != nil {
+			log.WithError(err).Error("store.Set1")
+		}
 	} else {
 		copyrightVoteRedeemString := string(copyrightVoteRedeemByte)
 		if !strings.Contains(copyrightVoteRedeemString, dataHash) {
 			copyrightVoteRedeemString += "|" + dataHash
-			store.Set(copyrightVoteRedeem, copyrightVoteRedeemString)
+			err = store.Set(copyrightVoteRedeem, copyrightVoteRedeemString)
+			if err != nil {
+				log.WithError(err).Error("store.Set2")
+			}
 		}
 	}
-
+	if err != nil {
+		panic(err)
+	}
 }
 
-func (k Keeper) RemoveFromCopyrightVoteRedeem(ctx sdk.Context, dataHash string) error {
+
+func (k Keeper) RemoveFromCopyrightVoteRedeem(ctx sdk.Context, dataHash string) (err error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
 	bz := store.Get(copyrightVoteRedeem)
 	var copyrightVoteRedeemString string
@@ -519,16 +624,20 @@ func (k Keeper) RemoveFromCopyrightVoteRedeem(ctx sdk.Context, dataHash string) 
 			}
 		}
 		idsStringArray = append(idsStringArray[:index], idsStringArray[index+1:]...)
-		//idsStringArray = idsStringArray[:index] + idsStringArray[index+1:]
 		copyrightVoteRedeemString = strings.Join(idsStringArray, "|")
 		if copyrightVoteRedeemString == "" {
+			
 			store.Delete(copyrightVoteRedeem)
 		} else {
-			store.Set(copyrightVoteRedeem, copyrightVoteRedeemString)
+			err = store.Set(copyrightVoteRedeem, copyrightVoteRedeemString)
+			if err != nil {
+				log.WithError(err).Error("store.Set")
+			}
 		}
 	}
-	return nil
+	return err
 }
+
 
 func (k Keeper) GetCopyrightVoteRedeem(ctx sdk.Context) string {
 	store := k.KVHelper(ctx)
@@ -539,14 +648,16 @@ func (k Keeper) GetCopyrightVoteRedeem(ctx sdk.Context) string {
 	return ""
 }
 
-func (k Keeper) SetCopyrightVoteForResult(ctx sdk.Context, dataHash string) error {
-	//store := ctx.KVStore(k.storeKey)
+
+func (k Keeper) SetCopyrightVoteForResult(ctx sdk.Context, dataHash string) (err error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
 	complainIdListByte := store.Get(copyrightApproveForResult)
 	var copyrightArray []CopyrightResult
 	if complainIdListByte != nil {
-		err := util.Json.Unmarshal(complainIdListByte, &copyrightArray)
+		err = util.Json.Unmarshal(complainIdListByte, &copyrightArray)
 		if err != nil {
+			log.WithError(err).Error("Unmarshal")
 			return err
 		}
 	}
@@ -555,16 +666,24 @@ func (k Keeper) SetCopyrightVoteForResult(ctx sdk.Context, dataHash string) erro
 		CreateTime: ctx.BlockTime(),
 	}
 	copyrightArray = append(copyrightArray, copyrightResult)
-	return store.Set(copyrightApproveForResult, copyrightArray)
+	log.WithField("data type", copyrightArray).Debug("SetCopyrightVoteForResult")
+	err = store.Set(copyrightApproveForResult, copyrightArray)
+	if err != nil {
+		log.WithError(err).Error("store.Set")
+	}
+	return err
 }
 
+
 func (k Keeper) RemoveFromCopyrightDataHash(ctx sdk.Context, datahash string) error {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
 	bz := store.Get(copyrightApproveForResult)
 	var copyrightArray []CopyrightResult
 	if bz != nil {
 		err := util.Json.Unmarshal(bz, &copyrightArray)
 		if err != nil {
+			log.WithError(err).Error("Unmarshal")
 			return err
 		}
 	} else {
@@ -578,25 +697,34 @@ func (k Keeper) RemoveFromCopyrightDataHash(ctx sdk.Context, datahash string) er
 			}
 		}
 		if len(copyrightArray) == 0 {
+			
 			store.Delete(copyrightApproveForResult)
 		} else {
 			copyrightArrayBytes, err := util.Json.Marshal(copyrightArray)
 			if err != nil {
+				log.WithError(err).Error("Marshal")
 				return err
 			}
-			store.Set(copyrightApproveForResult, copyrightArrayBytes)
+			err = store.Set(copyrightApproveForResult, copyrightArrayBytes)
+			if err != nil {
+				log.WithError(err).Error("store.Set")
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+
 func (k Keeper) GetCopyrightVoteForResult(ctx sdk.Context) ([]CopyrightResult, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
 	bz := store.Get(copyrightApproveForResult)
 	var copyrightArray []CopyrightResult
 	if bz != nil {
 		err := util.Json.Unmarshal(bz, &copyrightArray)
 		if err != nil {
+			log.WithError(err).Error("Unmarshal")
 			return copyrightArray, err
 		}
 	}
@@ -604,29 +732,37 @@ func (k Keeper) GetCopyrightVoteForResult(ctx sdk.Context) ([]CopyrightResult, e
 }
 
 func (k Keeper) QueryAccountCopyrightVoteList(ctx sdk.Context, copyrightHash string) ([]AccountVoteInfor, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
-	//copyrightAccountVoteList := make(map[string]AccountVoteInfor, 0)
 	copyrightVoteListInfor := make([]AccountVoteInfor, 0)
 	copyrightVoteListByte := store.Get(copyrightVoteListFor + copyrightHash)
 	if copyrightVoteListByte != nil {
 		err := util.Json.Unmarshal(copyrightVoteListByte, &copyrightVoteListInfor)
 		if err != nil {
+			log.WithError(err).Error("Unmarshal")
 			return copyrightVoteListInfor, err
 		}
 	}
 	return copyrightVoteListInfor, nil
 }
 
+
 func (k Keeper) UpdateAccountCopyrightVoteList(ctx sdk.Context, copyrightHash string, accountVoteList []AccountVoteInfor) error {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	store := k.KVHelper(ctx)
-	store.Set(copyrightVoteListFor+copyrightHash, accountVoteList)
-	return nil
+	err := store.Set(copyrightVoteListFor+copyrightHash, accountVoteList)
+	if err != nil {
+		log.WithError(err).Error("store.Set")
+	}
+	return err
 }
 
 func buildNewPicHash(ctx sdk.Context, picMap map[string]types.Link) string {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainKeeper)
 	node1 := unixfs.EmptyDirNode()
 
 	var linkMapKeySlice []string
+	//map key
 	for key, _ := range picMap {
 		linkMapKeySlice = append(linkMapKeySlice, key)
 	}
@@ -637,7 +773,8 @@ func buildNewPicHash(ctx sdk.Context, picMap map[string]types.Link) string {
 		link := picMap[key]
 		cid, err := cid2.Parse(link.Cid)
 		if err != nil {
-			logs.Error("query cid error", err)
+
+			log.WithError(err).Error("cid2.Parse")
 			panic(err)
 		}
 		node1.AddRawLink(link.Name, &format.Link{
@@ -649,19 +786,19 @@ func buildNewPicHash(ctx sdk.Context, picMap map[string]types.Link) string {
 	}
 	picByte, err := node1.MarshalJSON()
 	if err != nil {
-		logs.Error("query cid error", err)
+		log.WithError(err).Error("MarshalJSON")
 		panic(err)
 	}
 	dagService := dagutils.NewMemoryDagService()
 	err = dagService.Add(context.Background(), node1)
 	if err != nil {
-		logs.Error("6", err)
+		log.WithError(err).Error("dagService.Add")
 		panic(err)
 	}
 	getDagHash := func(editor *dagutils.Editor) string {
 		nnode, err := editor.Finalize(context.Background(), dagService)
 		if err != nil {
-			logs.Error("query cid error", err)
+			log.WithError(err).Error("editor.Finalize")
 			return ""
 		}
 		newHash := ipath.IpfsPath(nnode.Cid())
@@ -669,10 +806,11 @@ func buildNewPicHash(ctx sdk.Context, picMap map[string]types.Link) string {
 	}
 	e := dagutils.NewDagEditor(node1, dagService)
 	newHash := getDagHash(e)
-	logs.Info("newhash**********************************************", newHash)
+	log.WithField("hash", newHash).Debug("buildNewPicHash")
 	return string(picByte)
 }
 
+//,..
 func fileNameSuffix(fileName string) string {
 	var fileSuffix string
 	fileSuffix = path.Ext(fileName)
@@ -683,8 +821,6 @@ func fileNameSuffix(fileName string) string {
 	return filenameOnly
 }
 
-func getVoteAward(ctx sdk.Context,power decimal.Decimal)decimal.Decimal{
-	var award decimal.Decimal
-	award = power.Mul(config.CopyrightVoteAwardRate)
-	return award
+func getVoteAward(ctx sdk.Context, power decimal.Decimal) decimal.Decimal {
+	return power.Mul(core.CopyrightVoteAwardRateV2)
 }

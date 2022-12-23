@@ -41,7 +41,7 @@ func GetTxCmd() *cobra.Command {
 //				return err
 //			}
 //			contentHash := args[2]
-//
+
 //			msg := types.NewMsgChat(clientCtx.GetFromAddress(), contentHash)
 //			if err := msg.ValidateBasic(); err != nil {
 //				return err
@@ -50,8 +50,8 @@ func GetTxCmd() *cobra.Command {
 //			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 //		},
 //	}
-//
+
 //	flags.AddTxFlagsToCmd(cmd)
-//
+
 //	return cmd
 //}
