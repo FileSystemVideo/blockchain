@@ -2,6 +2,9 @@ syntax = "proto3";
 package copyright.v1beta1;
 
 import "gogoproto/gogo.proto";
+import "copyright/space_miner.proto";
+import "copyright/Invite.proto";
+import "copyright/copyright.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "x/copyright/types";
@@ -12,39 +15,55 @@ option (gogoproto.unmarshaler_all) = true;
 // GenesisState defines the capability module's genesis state.
 message GenesisState {
     // this line is used by starport scaffolding # genesis/proto/state
-    repeated AccountSpace accountSpace = 1 [(gogoproto.nullable) = false];
-    repeated AccountInvite accountInvite = 2 [(gogoproto.nullable) = false];
-    DeflationInfor deflationInfor =3 [(gogoproto.nullable) = false];
-    repeated InviteRecords inviteRecords =4 [(gogoproto.nullable) = false];
+    
+    repeated AccountSpace account_space = 1 [(gogoproto.nullable) = false];
+    
+    DeflationInfor deflation_infor =2 [(gogoproto.nullable) = false];
+
+    
+    repeated InviteRelation invite_relation = 3 [(gogoproto.nullable) = false];
+    
+    repeated InviteRecords invite_records =4 [(gogoproto.nullable) = false];
+    
+    repeated InviteReward invite_reward = 5 [(gogoproto.nullable) = false];
+    
+    repeated InvitesStatistics invites_statistics = 6 [(gogoproto.nullable) = false];
+
+    
+    repeated GenesisCopyrightPart copyright_part = 7[(gogoproto.nullable) = false];
+    //ID
+    CopyrightPublishId cpyright_publish_id = 8 [(gogoproto.nullable) = false];
+
+
+    
+    repeated GenesisCopyright copyright = 9 [(gogoproto.nullable) = false];
+    
+    repeated GenesisCopyrightExtra copyright_extra = 10 [(gogoproto.nullable) = false];
+    //IP
+    repeated GenesisCopyrightIp copyright_ip = 11 [(gogoproto.nullable) = false];
+    
+    repeated GenesisCopyrightOriginDataHash copyright_origin_hash = 12 [(gogoproto.nullable) = false];
+    
+    repeated GenesisCopyrightBonus copyright_bonus = 13 [(gogoproto.nullable) = false];
+    //NFT
+    repeated GenesisNftInfo nft_info = 14 [(gogoproto.nullable) = false];
+
+    
+    repeated GenesisCopyrightVote copyright_vote = 15 [(gogoproto.nullable) = false];
+    
+    repeated GenesisCopyrightVoteList copyright_vote_list = 16 [(gogoproto.nullable) = false];
+    
+    repeated CopyrightApproveResultData approve_result = 17 [(gogoproto.nullable) = false];
+    
+    string copyright_vote_redeem = 18;
+    
+    Params params = 19 [ (gogoproto.nullable) = false ];
 }
 
-message AccountSpace {
-    string  Account = 1 ;
-	string  SpaceTotal = 2 ;
-}
+message Params {
+    
+    repeated string black_list = 1;
 
-message AccountInvite {
-    string  Account = 1 ;
-	string  SupAccount = 2 ;
-}
-
-message InviteRecords{
-    string  Account = 1 ;
-    repeated AccountInviteRecord accountInviteRecord  = 2 [(gogoproto.nullable) = false];
-}
-
-message AccountInviteRecord{
-    string Address   = 1;
-    string InviteTime = 2;
-}
-
-message DeflationInfor {
-    string  MinerTotalAmount = 1 ;
-	string  HasMinerAmount = 2 ;
-	string  RemainMinerAmount =3;
-	string  DayMinerAmount =4;
-	string  DayMinerRemain =5;
-    string  SpaceMinerAmount=6;
-    string  SpaceMinerBonus=7;
-    string  DeflationSpaceTotal=8;
+    
+    repeated string white_list = 2;
 }

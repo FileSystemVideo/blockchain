@@ -28,10 +28,10 @@ func TimeStampToTimeString(timestamp int64) string {
 	return time.Unix(timestamp, 0).Format(YMRDHS_Format)
 }
 
-
+//id
 func CreateComplainId(account string) string {
 	nowTime := time.Now().UnixNano()
-
+	//  +  md5
 	complainId := strings.ToLower(Md5String(account + strconv.FormatInt(nowTime, 10)))
 	return complainId
 }

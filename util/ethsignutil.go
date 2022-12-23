@@ -8,8 +8,8 @@ import (
 
 func PricheckSign(message string, signedAddress string) (bool, string) {
 	var err error
-
-
+	//var addr = strings.ToLower(pubaddress) 
+	//addr = string([]byte(addr)[4:]) 
 	message = hex.EncodeToString([]byte(strings.ToLower(message)))
 	var msg = crypto.Keccak256([]byte(message))
 	sign, err := hex.DecodeString(strings.ToLower(signedAddress))
