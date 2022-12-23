@@ -4,6 +4,7 @@ package spaceutil
 
 import "github.com/StackExchange/wmi"
 
+
 func GetDiskInfo() (diskSize, diskFree uint64) {
 	var storageinfo []storageInfo
 	err := wmi.Query("Select * from Win32_LogicalDisk", &storageinfo)

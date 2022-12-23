@@ -1,0 +1,72 @@
+syntax = "proto3";
+package copyright.v1beta1;
+
+import "gogoproto/gogo.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "x/copyright/types";
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+
+message InviteRelation {
+    //key
+    string  invite_relation_key = 1 ;
+    
+	  string  invite_address = 2 ;
+}
+
+
+message InviteRecords{
+    
+    string  invite_recording_key = 1 ;
+    
+    repeated AccountInviteRecord account_invite_record  = 2 [(gogoproto.nullable) = false];
+}
+
+
+message AccountInviteRecord{
+    
+    string address   = 1;
+    
+    int64 invite_time = 2;
+    
+    string space = 3;
+}
+
+
+message InviteReward {
+    //key
+    string invite_reward_key = 1;
+    
+    InviteSettlement invite_settlement = 2 [(gogoproto.nullable) = false];
+}
+
+
+message InviteSettlement {
+    //(10%)
+    string expansion_reward_space = 1;
+    //(80%)
+    string invite_reward_space = 2;
+}
+
+
+message InvitesStatistics {
+    //key
+    string invites_statistics_key = 1;
+    
+    GenesisInviteRewardStatistics invite_reward_statistics = 2 [(gogoproto.nullable) = false];
+}
+
+
+message GenesisInviteRewardStatistics {
+    
+    string invite_reward_space = 1;
+    
+    int64 invite_reward_counts = 2;
+    
+    string expansion_reward_space = 3;
+    
+    int64 expansion_reward_counts = 4;
+}

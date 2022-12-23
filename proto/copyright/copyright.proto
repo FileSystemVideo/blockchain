@@ -1,0 +1,284 @@
+syntax = "proto3";
+package copyright.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "copyright/space_miner.proto";
+//import "cosmos/base/v1beta1/coin.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "x/copyright/types";
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+
+
+message CopyrightParty {
+    //ID
+    string id = 1;
+    
+    string intro = 2;
+    
+    string author = 3;
+    
+    string creator = 4;
+}
+
+
+message GenesisCopyrightPart {
+    //key
+    string copyright_party_key = 1;
+    
+    CopyrightParty copyright_party = 2 [(gogoproto.nullable) = false];
+}
+
+//id
+message CopyrightPublishId {
+    //ID
+    map<string,string> publish_id = 1;
+}
+
+
+//IP
+message CopyrightIp{
+    
+    string creator = 1;
+    //IP
+    string ip = 2;
+}
+
+//IP
+message GenesisCopyrightIp {
+    //IPkey
+    string copyright_ip_key = 1;
+    //IP
+    CopyrightIp copyright_ip = 2 [(gogoproto.nullable) = false];
+}
+
+
+message CopyrightOriginDataHash {
+    
+    string creator = 1;
+    
+    string origin_data_hash = 2;
+    // 0  1  2(,)
+    int64 status = 3;
+}
+
+
+message GenesisCopyrightOriginDataHash {
+    //key
+    string copyright_origin_hash_key = 1;
+    
+    CopyrightOriginDataHash origin_data_hash = 2 [(gogoproto.nullable) = false];
+}
+
+
+message CopyrightBonus {
+    
+    string downer = 1;
+    
+    int64 height = 2;
+}
+
+
+message GenesisCopyrightBonus {
+    //key
+    string copyright_bonus_address_key = 1;
+    
+    CopyrightBonus copyright_bonus = 2 [(gogoproto.nullable) = false];
+}
+
+//NFT
+message NftInfoData {
+    //nft ID
+    string token_id = 1;
+    
+    string english_name = 2;
+    
+    string chinese_name = 3;
+    
+    string owner = 4;
+    
+    string meta_data = 5;
+}
+
+//NFT
+message GenesisNftInfo {
+    //NFT key
+    string nft_token_id_key = 1;
+    //NFT
+    NftInfoData nft_info = 2 [(gogoproto.nullable) = false];
+}
+
+
+message CopyrightVoteShare {
+    
+    string favor_total = 1;
+    
+    string against_total = 2;
+}
+
+
+message GenesisCopyrightVote {
+    //key
+    string copyright_vote_key = 1;
+    
+    map<string,CopyrightVoteShare> vote_data = 2 [(gogoproto.nullable) = false];
+}
+
+
+message AccountVote {
+    
+    string account = 1;
+    //TX
+    string txhash = 2;
+    
+    string power = 3;
+    
+    string mortg_time = 4;
+    
+    int32 status = 5;
+}
+
+
+message GenesisCopyrightVoteList {
+    //key
+    string copyright_vote_list_key = 1;
+    
+    repeated AccountVote account_vote = 2 [(gogoproto.nullable) = false];
+}
+
+
+message CopyrightApproveResultData {
+    
+    string data_hash = 1;
+    
+    string create_time = 2;
+}
+
+
+message GenesisCopyright {
+    //key
+    string copyright_key = 1;
+    Copyright copyright = 2 [(gogoproto.nullable) = false];
+}
+
+
+message Copyright {
+    
+    string DataHash = 1;
+    
+    GenesisRealCoin price = 2 [(gogoproto.nullable) = false];
+    
+    string creator = 3;
+    
+    string resourcetype = 4;
+    //ipfs hash
+    string prehash = 5;
+    //ipfs hash
+    string video_hash = 6;
+    
+    string name = 7;
+    
+    File files = 8 [(gogoproto.nullable) = false];
+    
+    int64 size = 9;
+    
+    int64 create_time = 10;
+    
+    string password = 11;
+    
+    string charge_rate = 12;
+    //IP
+    string ip = 13;
+    
+    string origin_datahash = 14;
+    
+    string ext = 15;
+    //uid
+    int64 classify_uid = 16;
+    
+    map<string,LinkData> link_map = 17 [(gogoproto.nullable) = false];
+    
+    int32 approve_status = 18;
+    //hash
+    map<string,LinkData> pic_link_map = 19 [(gogoproto.nullable) = false];
+    
+    map<string,Values> secret_map = 20 [(gogoproto.nullable) = false];
+
+}
+
+message Values {
+    repeated bytes val = 1;
+}
+
+
+message LinkData {
+    
+    string name = 1;
+    
+    uint64 size = 2;
+    
+    string cid = 3;
+}
+
+
+message File {
+    bool is_dir = 1;
+    int64 size = 2;
+    string name = 3;
+    repeated File content = 4 [(gogoproto.nullable) = false];
+}
+
+
+message CopyrightExtra {
+    
+    string downer = 1;
+    
+    GenesisRealCoin price = 2 [(gogoproto.nullable) = false];
+    //  buy  mortgage ()
+    string species = 3;
+    
+    int64 height = 4;
+}
+
+
+message GenesisCopyrightExtra {
+    //key
+    string copyright_extra_key = 1;
+    
+    CopyrightExtra copyright_extra = 2 [(gogoproto.nullable) = false];
+}
+
+
+
+
+
+/*
+
+message GenesisTradeBase {
+    
+    string  trade_type = 1 ;
+    
+	  string  contract_address = 2 ;
+}
+
+
+message GenesisStdFee {
+    repeated cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+    uint64 gas = 2 ;
+}
+
+//tx
+message GenesisTxBase {
+    
+    int64  block_time = 1;
+    
+    int64  height = 2;
+    
+    string tx_hash = 3;
+    
+    GenesisStdFee fee = 4;
+    string memo = 5;
+}*/

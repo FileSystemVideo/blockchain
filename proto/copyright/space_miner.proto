@@ -1,0 +1,82 @@
+syntax = "proto3";
+package copyright.v1beta1;
+
+import "gogoproto/gogo.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "x/copyright/types";
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+
+message AccountSpace {
+  
+  string  account = 1 ;
+  // b
+  string  space_total = 2 ;
+  // b
+  string used_space = 3;
+  
+  GenesisRealCoin deflation_amount = 4 [(gogoproto.nullable) = false];
+  
+  string buy_space = 5;
+  
+  string reward_space = 6;
+  
+  map<int64,GenesisSettlement> settlement = 7 [(gogoproto.nullable) = false];
+  
+  GenesisSettlement settlement_end = 8 [(gogoproto.nullable) = false];
+  
+  string locked_space = 9;
+}
+
+message DeflationInfor {
+  
+  string  miner_total_amount = 1 ;
+  
+  string  has_miner_amount = 2 ;
+  
+  string  remain_miner_amount = 3;
+  
+  string  day_miner_amount = 4;
+  
+  int64  day_miner_remain = 5;
+  
+  int64 deflation_status = 6;
+  
+  string  space_miner_amount = 7;
+  
+  string  space_miner_bonus = 8;
+  
+  string  deflation_space_total = 9;
+  
+  repeated SpaceTotalIndex space_total_index = 10 [(gogoproto.nullable) = false];
+  
+  string space_miner_account = 11;
+
+}
+
+
+message SpaceTotalIndex {
+  //key
+  string space_total_index_key = 1;
+  
+  string space_total = 2;
+}
+
+
+message GenesisSettlement {
+  
+  int64 index = 1;
+  
+  string index_space = 2;
+}
+
+
+message GenesisRealCoin {
+  
+  string denom = 1;
+  
+  string amount = 2;
+}

@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/tharsis/ethermint/encoding"
 	"log"
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -13,9 +15,15 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// NewDefaultGenesisState generates the default state for the application.
+func NewDefaultGenesisState() simapp.GenesisState {
+	encCfg := encoding.MakeConfig(ModuleBasics)
+	return ModuleBasics.DefaultGenesis(encCfg.Marshaler)
+}
+
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
-func (app *App) ExportAppStateAndValidators(
+func (app *Evmos) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string,
 ) (servertypes.ExportedApp, error) {
 
@@ -51,7 +59,7 @@ func (app *App) ExportAppStateAndValidators(
 // prepare for fresh start at zero height
 // NOTE zero height genesis is a temporary feature which will be deprecated
 //      in favour of export at a block height
-func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
+func (app *Evmos) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
 	applyAllowedAddrs := false
 
 	// check if there is a allowed address list

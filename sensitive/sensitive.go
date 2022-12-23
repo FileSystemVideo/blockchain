@@ -28,7 +28,9 @@ func initPersonSensitiveWords(personWords []string) *SensitiveMap {
 	return personSensitive
 }
 
+/*
 
+*/
 func initSensitiveMap() *SensitiveMap {
 	return &SensitiveMap{
 		sensitiveNode: make(map[string]interface{}),
@@ -44,7 +46,9 @@ func ClearPersonSensitive() {
 	}
 }
 
+/*
 
+*/
 func readDictionary(path string) []string {
 	file, err := os.Open(path)
 	if err != nil {
@@ -56,11 +60,13 @@ func readDictionary(path string) []string {
 	return dictionary
 }
 
-
+/*
+，DFAtrie
+*/
 func InitDictionary(s *SensitiveMap) *SensitiveMap {
 	s = initSensitiveMap()
-
-	dictionary := strings.Fields(systemword)
+	//dictionary := readDictionary(dictionaryPath)
+	dictionary := strings.Fields(systemword) 
 	for _, words := range dictionary {
 		sMapTmp := s
 		w := []rune(words)
@@ -68,18 +74,18 @@ func InitDictionary(s *SensitiveMap) *SensitiveMap {
 		for i := 0; i < wordsLength; i++ {
 			t := string(w[i])
 			isEnd := false
-
+			
 			if i == (wordsLength - 1) {
 				isEnd = true
 			}
 			func(tx string) {
-				if _, ok := sMapTmp.sensitiveNode[tx]; !ok {
+				if _, ok := sMapTmp.sensitiveNode[tx]; !ok { 
 					sMapTemp := new(SensitiveMap)
 					sMapTemp.sensitiveNode = make(map[string]interface{})
 					sMapTemp.isEnd = isEnd
 					sMapTmp.sensitiveNode[tx] = sMapTemp
 				}
-				sMapTmp = sMapTmp.sensitiveNode[tx].(*SensitiveMap)
+				sMapTmp = sMapTmp.sensitiveNode[tx].(*SensitiveMap) 
 				sMapTmp.isEnd = isEnd
 			}(t)
 		}
@@ -87,7 +93,9 @@ func InitDictionary(s *SensitiveMap) *SensitiveMap {
 	return s
 }
 
-
+/*
+，DFAtrie
+*/
 func InitPersonDictionary(s *SensitiveMap, personWords []string) *SensitiveMap {
 	s = initSensitiveMap()
 	for _, words := range personWords {
@@ -97,18 +105,18 @@ func InitPersonDictionary(s *SensitiveMap, personWords []string) *SensitiveMap {
 		for i := 0; i < wordsLength; i++ {
 			t := string(w[i])
 			isEnd := false
-
+			
 			if i == (wordsLength - 1) {
 				isEnd = true
 			}
 			func(tx string) {
-				if _, ok := sMapTmp.sensitiveNode[tx]; !ok {
+				if _, ok := sMapTmp.sensitiveNode[tx]; !ok { 
 					sMapTemp := new(SensitiveMap)
 					sMapTemp.sensitiveNode = make(map[string]interface{})
 					sMapTemp.isEnd = isEnd
 					sMapTmp.sensitiveNode[tx] = sMapTemp
 				}
-				sMapTmp = sMapTmp.sensitiveNode[tx].(*SensitiveMap)
+				sMapTmp = sMapTmp.sensitiveNode[tx].(*SensitiveMap) 
 				sMapTmp.isEnd = isEnd
 			}(t)
 		}
@@ -116,7 +124,10 @@ func InitPersonDictionary(s *SensitiveMap, personWords []string) *SensitiveMap {
 	return s
 }
 
-
+/*
+：，
+：，
+*/
 func (s *SensitiveMap) CheckSensitive(text string) (string, bool) {
 	text = strings.ReplaceAll(text, " ", "")
 	content := []rune(text)
@@ -138,7 +149,7 @@ func (s *SensitiveMap) CheckSensitive(text string) (string, bool) {
 				if in == contentLength-1 {
 					break
 				}
-				sMapTmp = sMapTmp.sensitiveNode[wo].(*SensitiveMap)
+				sMapTmp = sMapTmp.sensitiveNode[wo].(*SensitiveMap) 
 				in++
 			} else {
 				break
@@ -152,7 +163,10 @@ func (s *SensitiveMap) CheckSensitive(text string) (string, bool) {
 	return ta, result
 }
 
-
+/*
+：
+：，“[""][，]”
+*/
 type Target struct {
 	Indexes []int
 	Len     int
@@ -180,7 +194,7 @@ func (s *SensitiveMap) FindAllSensitive(text string) map[string]*Target {
 				if in == contentLength-1 {
 					break
 				}
-				sMapTmp = sMapTmp.sensitiveNode[wo].(*SensitiveMap)
+				sMapTmp = sMapTmp.sensitiveNode[wo].(*SensitiveMap) 
 				in++
 			} else {
 				break
