@@ -2,8 +2,8 @@ package rest
 
 import (
 	"errors"
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
 	"fs.video/blockchain/x/copyright/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,66 +12,78 @@ import (
 	"strings"
 )
 
+
 func MortgageHandlerFn(msgBytes []byte, ctx *client.Context, fee legacytx.StdFee, memo string) error {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainRest)
 	var mortgage types.MsgMortgage
 	err := util.Json.Unmarshal(msgBytes, &mortgage)
 	if err != nil {
+		log.WithError(err).Error("Unmarshal")
 		return err
 	}
 
+	log.Debug("do")
+
 	addr, err := sdk.AccAddressFromBech32(mortgage.MortageAccount)
 	if err != nil {
+		log.WithError(err).Error("AccAddressFromBech32")
 		return errors.New(ParseAccountError)
 	}
 
+	
 	err = judgeOfferAccount(mortgage.OfferAccountShare)
 	if err != nil {
+		log.WithError(err).Error("judgeOfferAccount")
 		return err
 	}
 	flag, err := grpcQueryMortgageAmount(ctx)
 	if err != nil || !flag {
+		log.WithError(err).Error("grpcQueryMortgageAmount")
 		return err
 	}
 
 	copyrightInfor, height, err := grpcQueryCopyright(ctx, mortgage.DataHash)
 	if err != nil {
+		log.WithError(err).Error("grpcQueryCopyright")
 		return err
 	}
 	if copyrightInfor.Creator.Equals(addr) {
 		return errors.New(HasPayedForDatahash)
 	}
-	if height < config.MortgageStartHeight {
+	if height < core.MortgageStartHeight { 
 		return errors.New(MortgageStartHeight)
 	}
 
+	
 	data, err := grpcQueryCopyrightAndAccount(ctx, mortgage.MortageAccount, mortgage.DataHash)
 	if err != nil {
 		return errors.New(QueryChainInforError)
 	}
-
+	
 	if data.Species == "buy" || (!data.Downer.Empty() && height < data.Height) {
 		return errors.New(HasPayedForDatahash)
 	}
 	priceDecimal := copyrightInfor.Price.AmountDec()
-	mortgAmountDecimal := priceDecimal.Mul(decimal.NewFromInt(config.MortgageRate))
-
+	mortgAmountDecimal := priceDecimal.Mul(decimal.NewFromInt(core.MortgageRate))
+	// 2‰ ()
+	
 	if len(fee.Amount) > 0 {
 		feeDecimal, err := decimal.NewFromString(types.MustParseLedgerCoin(fee.Amount[0]))
 		if err != nil {
 			return errors.New(DecimalFromStringError)
 		}
-		if feeDecimal.LessThan(mortgAmountDecimal.Mul(decimal.RequireFromString(config.MortgageFee))) {
+		if feeDecimal.LessThan(mortgAmountDecimal.Mul(core.MortgageFee)) {
 			return errors.New(FeeIsTooLess)
 		}
 		mortgAmountDecimal.Add(feeDecimal)
 	} else {
 		return errors.New(FeeCannotEmpty)
 	}
-
-	floatAmount, _ := mortgAmountDecimal.Float64()
-	ledgeAmount := types.NewLedgerDec(floatAmount)
-	balStatus, errStr := judgeBalance(ctx, addr, ledgeAmount, config.MainToken)
+	
+	ledgeAmount := types.NewLedgerDec(mortgAmountDecimal)
+	balStatus, errStr := judgeBalance(ctx, addr, ledgeAmount, core.MainToken)
 	if !balStatus {
+		log.Error("judgeBalance fail | ", err.Error())
 		return errors.New(errStr)
 	}
 

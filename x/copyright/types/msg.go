@@ -1,9 +1,11 @@
 package types
 
 import (
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
-	"fs.video/blockchain/x/copyright/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/shopspring/decimal"
+	"strings"
 )
 
 const (
@@ -20,6 +22,7 @@ const (
 	TypeMsgEditorCopyright            = "editorCopyright"
 	TypeMsgDeleteCopyright            = "deleteCopyright"
 	TypeMsgCopyrightBonus             = "copyrightBonus"
+	TypeMsgCopyrightBonusV2           = "copyrightBonusV2"
 	TypeMsgCopyrightComplain          = "copyrightComplain"
 	TypeMsgComplainResponse           = "complainResponse"
 	TypeMsgComplainVote               = "complainVote"
@@ -28,6 +31,7 @@ const (
 	TypeMsgInviteReward               = "inviteReward"
 	TypeMsgSpaceMinerReward           = "spaceMinerReward"
 	TypeMsgCopyrightBonusRear         = "copyrightBonusRear"
+	TypeMsgCopyrightBonusRearV2       = "copyrightBonusRearV2"
 	TypeMsgCopyrightVote              = "copyrightVote"
 	TypeMsgCrossChainIn               = "crossChainIn"
 	TypeMsgCrossChainOut              = "crossChainOut"
@@ -37,21 +41,18 @@ var (
 	_ sdk.Msg = &MsgCreateCopyright{}
 	_ sdk.Msg = &MsgRegisterCopyrightParty{}
 	_ sdk.Msg = &MsgSpaceMiner{}
-	_ sdk.Msg = &MsgDeflationVote{}
-	_ sdk.Msg = &MsgInviteCode{}
 	_ sdk.Msg = &MsgDistributeCommunityReward{}
 	_ sdk.Msg = &MsgMortgage{}
 	_ sdk.Msg = &MsgEditorCopyright{}
 	_ sdk.Msg = &MsgDeleteCopyright{}
-	_ sdk.Msg = &MsgCopyrightBonus{}
+	_ sdk.Msg = &MsgCopyrightBonusV2{}
 	_ sdk.Msg = &MsgCopyrightComplain{}
 	_ sdk.Msg = &MsgComplainResponse{}
 	_ sdk.Msg = &MsgComplainVote{}
-	_ sdk.Msg = &MsgAuthorizeAccount{}
 	_ sdk.Msg = &MsgTransfer{}
 	_ sdk.Msg = &MsgInviteReward{}
 	_ sdk.Msg = &MsgSpaceMinerReward{}
-	_ sdk.Msg = &MsgCopyrightBonusRear{}
+	_ sdk.Msg = &MsgCopyrightBonusRearV2{}
 	_ sdk.Msg = &MsgVoteCopyright{}
 	_ sdk.Msg = &MsgCrossChainIn{}
 	_ sdk.Msg = &MsgCrossChainOut{}
@@ -109,7 +110,7 @@ func (m MsgCrossChainIn) Type() string { return TypeMsgCrossChainIn }
 
 func (m MsgCrossChainIn) GetSigners() []sdk.AccAddress {
 	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(config.CrossChainInManageAccount)
+	delAddr, err := sdk.AccAddressFromBech32(core.CrossChainInManageAccount) //todo  
 	if err != nil {
 		panic(err)
 	}
@@ -164,22 +165,22 @@ func (m MsgVoteCopyright) ValidateBasic() error {
 func (m MsgVoteCopyright) XXX_MessageName() string {
 	return TypeMsgCopyrightVote
 }
-
-func NewMsgCopyrightBonusRear(data CopyrightBonusRearData) (*MsgCopyrightBonusRear, error) {
-	return &MsgCopyrightBonusRear{
+func NewMsgCopyrightBonusRearV2(data CopyrightBonusRearData) (*MsgCopyrightBonusRearV2, error) {
+	return &MsgCopyrightBonusRearV2{
 		Creator:           data.Downer.String(),
 		Datahash:          data.DataHash,
 		OfferAccountShare: data.OfferAccountShare,
+		BonusAddress:      data.BonusAddress,
 	}, nil
 }
 
-func (m MsgCopyrightBonusRear) Route() string { return RouterKey }
+func (m MsgCopyrightBonusRearV2) Route() string { return RouterKey }
 
-func (m MsgCopyrightBonusRear) Type() string { return TypeMsgCopyrightBonusRear }
+func (m MsgCopyrightBonusRearV2) Type() string { return TypeMsgCopyrightBonusRearV2 }
 
-func (m MsgCopyrightBonusRear) GetSigners() []sdk.AccAddress {
+func (m MsgCopyrightBonusRearV2) GetSigners() []sdk.AccAddress {
 	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(m.Creator)
+	delAddr, err := sdk.AccAddressFromBech32(m.BonusAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -187,17 +188,17 @@ func (m MsgCopyrightBonusRear) GetSigners() []sdk.AccAddress {
 	return addrs
 }
 
-func (m MsgCopyrightBonusRear) GetSignBytes() []byte {
+func (m MsgCopyrightBonusRearV2) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(&m)
 	return sdk.MustSortJSON(bz)
 }
 
-func (m MsgCopyrightBonusRear) ValidateBasic() error {
+func (m MsgCopyrightBonusRearV2) ValidateBasic() error {
 	return nil
 }
 
-func (m MsgCopyrightBonusRear) XXX_MessageName() string {
-	return TypeMsgCopyrightBonusRear
+func (m MsgCopyrightBonusRearV2) XXX_MessageName() string {
+	return TypeMsgCopyrightBonusRearV2
 }
 
 func NewMsgSpaceMinerReward(data SpaceMinerRewardData) (*MsgSpaceMinerReward, error) {
@@ -298,47 +299,38 @@ func (m MsgTransfer) GetSignBytes() []byte {
 }
 
 func (m MsgTransfer) ValidateBasic() error {
-	return nil
-}
-
-func (m MsgTransfer) XXX_MessageName() string {
-	return TypeMsgTransfer
-}
-
-func NewMsgAuthorizeAccount(data AuthorizeAccountData) (*MsgAuthorizeAccount, error) {
-	return &MsgAuthorizeAccount{
-		Account:  data.Account.String(),
-		Sign:     data.Sign,
-		Message:  data.Message,
-		ConsAddr: data.ConsAddr,
-	}, nil
-}
-
-func (m MsgAuthorizeAccount) Route() string { return RouterKey }
-
-func (m MsgAuthorizeAccount) Type() string { return TypeMsgAuthorizeAccount }
-
-func (m MsgAuthorizeAccount) GetSigners() []sdk.AccAddress {
-	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(m.Account)
+	var prices RealCoins
+	err := util.Json.Unmarshal([]byte(m.Coins), &prices)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	addrs := []sdk.AccAddress{delAddr}
-	return addrs
-}
+	for _, price := range prices {
+		//prices1fsv,2tip
+		if price.Denom == core.MainToken {
+			amountDec, err := decimal.NewFromString(price.Amount)
+			if err != nil {
+				return err
+			}
+			if len(prices) == 1 { //fsv
+				if amountDec.LessThan(core.MinFsvTransfer) {
+					return QuantityIllegalErr
+				}
+			} else if len(prices) == 2 { //tip   tip 、fsv
+				if amountDec.LessThan(core.CopyrightInviteFee) {
+					return QuantityIllegalErr
+				}
+			}
+		}
+		
+		priceList := strings.Split(price.Amount, ".")
+		if len(priceList) > 1 {
+			if len(priceList[1]) > core.TransferAmountDecimalInputLength {
+				return AmountDecimalMax18Err
+			}
+		}
+	}
 
-func (m MsgAuthorizeAccount) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&m)
-	return sdk.MustSortJSON(bz)
-}
-
-func (m MsgAuthorizeAccount) ValidateBasic() error {
 	return nil
-}
-
-func (m MsgAuthorizeAccount) XXX_MessageName() string {
-	return TypeMsgAuthorizeAccount
 }
 
 func NewMsgComplainVote(data ComplainVoteData) (*MsgComplainVote, error) {
@@ -458,21 +450,22 @@ func (m MsgCopyrightComplain) XXX_MessageName() string {
 	return TypeMsgCopyrightComplain
 }
 
-func NewMsgCopyrightBonus(data CopyrightBonusData) (*MsgCopyrightBonus, error) {
-	return &MsgCopyrightBonus{
+func NewMsgCopyrightBonusV2(data CopyrightBonusData) (*MsgCopyrightBonusV2, error) {
+	return &MsgCopyrightBonusV2{
 		Creator:           data.Downer.String(),
 		Datahash:          data.DataHash,
 		OfferAccountShare: data.OfferAccountShare,
 		DataHashAccount:   data.HashAccount.String(),
 		BonusType:         data.BonusType,
+		BonusAddress:      data.BonusAddress,
 	}, nil
 }
 
-func (m MsgCopyrightBonus) Route() string { return RouterKey }
+func (m MsgCopyrightBonusV2) Route() string { return RouterKey }
 
-func (m MsgCopyrightBonus) Type() string { return TypeMsgCopyrightBonus }
+func (m MsgCopyrightBonusV2) Type() string { return TypeMsgCopyrightBonusV2 }
 
-func (m MsgCopyrightBonus) GetSigners() []sdk.AccAddress {
+func (m MsgCopyrightBonusV2) GetSigners() []sdk.AccAddress {
 	// delegator is first signer so delegator pays fees
 	delAddr, err := sdk.AccAddressFromBech32(m.Creator)
 	if err != nil {
@@ -482,17 +475,17 @@ func (m MsgCopyrightBonus) GetSigners() []sdk.AccAddress {
 	return addrs
 }
 
-func (m MsgCopyrightBonus) GetSignBytes() []byte {
+func (m MsgCopyrightBonusV2) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(&m)
 	return sdk.MustSortJSON(bz)
 }
 
-func (m MsgCopyrightBonus) ValidateBasic() error {
+func (m MsgCopyrightBonusV2) ValidateBasic() error {
 	return nil
 }
 
-func (m MsgCopyrightBonus) XXX_MessageName() string {
-	return TypeMsgCopyrightBonus
+func (m MsgCopyrightBonusV2) XXX_MessageName() string {
+	return TypeMsgCopyrightBonusV2
 }
 
 func NewMsgDeleteCopyright(data DeleteCopyrightData) (*MsgDeleteCopyright, error) {
@@ -564,6 +557,26 @@ func (m MsgEditorCopyright) GetSignBytes() []byte {
 }
 
 func (m MsgEditorCopyright) ValidateBasic() error {
+	var price RealCoin
+	err := util.Json.Unmarshal([]byte(m.Price), &price)
+	if err != nil {
+		return err
+	}
+	
+	priceList := strings.Split(price.Amount, ".")
+	if len(priceList) > 1 {
+		if len(priceList[1]) > core.CopyrightPriceDecimalInputlLength {
+			return CopyrightPirceErr
+		}
+	}
+	
+	chargeRateList := strings.Split(m.ChargeRate, ".")
+	if len(chargeRateList) > 1 {
+		if len(chargeRateList[1]) > core.CoryrightChargeRateDecimalInputlLength { 
+			return CopyrightChargeRateErr
+		}
+	}
+
 	return nil
 }
 
@@ -652,6 +665,19 @@ func (m MsgSpaceMiner) GetSignBytes() []byte {
 }
 
 func (m MsgSpaceMiner) ValidateBasic() error {
+	var realCoin RealCoin
+	
+	err := util.Json.Unmarshal([]byte(m.DeflationAmount), &realCoin)
+	if err != nil {
+		return err
+	}
+	amountDec, err2 := sdk.NewDecFromStr(realCoin.Amount)
+	if err2 != nil {
+		return err2
+	}
+	if amountDec.LT(core.MinRealAmountDec) {
+		return QuantityIllegalErr
+	}
 	return nil
 }
 
@@ -692,40 +718,6 @@ func (m MsgNftTransfer) ValidateBasic() error {
 
 func (m MsgNftTransfer) XXX_MessageName() string {
 	return TypeMsgNftTransfer
-}
-
-func NewMsgDeflationVote(data DeflationVoteData) (*MsgDeflationVote, error) {
-	return &MsgDeflationVote{
-		Creator: data.Creator.String(),
-		Option:  data.Option,
-	}, nil
-}
-
-func (m MsgDeflationVote) Route() string { return RouterKey }
-
-func (m MsgDeflationVote) Type() string { return TypeMsgDeflationVote }
-
-func (m MsgDeflationVote) GetSigners() []sdk.AccAddress {
-	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(m.Creator)
-	if err != nil {
-		panic(err)
-	}
-	addrs := []sdk.AccAddress{delAddr}
-	return addrs
-}
-
-func (m MsgDeflationVote) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&m)
-	return sdk.MustSortJSON(bz)
-}
-
-func (m MsgDeflationVote) ValidateBasic() error {
-	return nil
-}
-
-func (m MsgDeflationVote) XXX_MessageName() string {
-	return TypeMsgDeflationVote
 }
 
 func NewMsgCreateCopyright(data CopyrightData) (*MsgCreateCopyright, error) {
@@ -788,6 +780,25 @@ func (m MsgCreateCopyright) GetSignBytes() []byte {
 }
 
 func (m MsgCreateCopyright) ValidateBasic() error {
+	var price RealCoin
+	err := util.Json.Unmarshal([]byte(m.Price), &price)
+	if err != nil {
+		return err
+	}
+	
+	priceList := strings.Split(price.Amount, ".")
+	if len(priceList) > 1 {
+		if len(priceList[1]) > core.CopyrightPriceDecimalInputlLength {
+			return CopyrightPirceErr
+		}
+	}
+	
+	chargeRateList := strings.Split(m.ChargeRate, ".")
+	if len(chargeRateList) > 1 {
+		if len(chargeRateList[1]) > core.CoryrightChargeRateDecimalInputlLength { 
+			return CopyrightChargeRateErr
+		}
+	}
 	return nil
 }
 
@@ -829,41 +840,6 @@ func (m MsgRegisterCopyrightParty) ValidateBasic() error {
 
 func (m MsgRegisterCopyrightParty) XXX_MessageName() string {
 	return TypeMsgRegisterCopyrightParty
-}
-
-func NewMsgInviteCode(data InviteCodeData) (*MsgInviteCode, error) {
-	return &MsgInviteCode{
-		Address:    data.Address,
-		InviteCode: data.InviteCode,
-		InviteTime: data.InviteTime,
-	}, nil
-}
-
-func (m MsgInviteCode) Route() string { return RouterKey }
-
-func (m MsgInviteCode) Type() string { return TypeMsgInviteCode }
-
-func (m MsgInviteCode) GetSigners() []sdk.AccAddress {
-	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(m.Address)
-	if err != nil {
-		panic(err)
-	}
-	addrs := []sdk.AccAddress{delAddr}
-	return addrs
-}
-
-func (m MsgInviteCode) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&m)
-	return sdk.MustSortJSON(bz)
-}
-
-func (m MsgInviteCode) ValidateBasic() error {
-	return nil
-}
-
-func (m MsgInviteCode) XXX_MessageName() string {
-	return TypeMsgInviteCode
 }
 
 func NewMsgDistributeCommunityReward(address sdk.AccAddress, coins string) (*MsgDistributeCommunityReward, error) {

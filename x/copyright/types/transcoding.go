@@ -1,14 +1,18 @@
 package types
 
 import (
+	"fs.video/blockchain/core"
 	"fs.video/blockchain/util"
-	logs "fs.video/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributionTypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+/**
 
+*/
+
+//dpos msg  data
 func NewWithdrawDelegatorRewardData(msg distributionTypes.MsgWithdrawDelegatorReward) *WithdrawDelegatorRewardData {
 	data := WithdrawDelegatorRewardData{
 		DelegatorAddress: msg.DelegatorAddress,
@@ -17,6 +21,7 @@ func NewWithdrawDelegatorRewardData(msg distributionTypes.MsgWithdrawDelegatorRe
 	return &data
 }
 
+//dpos msg  data
 func NewUndelegateData(msg stakingTypes.MsgUndelegate) *UndelegationData {
 	data := UndelegationData{
 		Amount:           MustLedgerCoin2RealCoin(msg.Amount),
@@ -26,6 +31,18 @@ func NewUndelegateData(msg stakingTypes.MsgUndelegate) *UndelegationData {
 	return &data
 }
 
+//dpos msg  data
+func NewRedelegateData(msg stakingTypes.MsgBeginRedelegate) *RedelegationData {
+	data := RedelegationData{
+		Amount:              MustLedgerCoin2RealCoin(msg.Amount),
+		DelegatorAddress:    msg.DelegatorAddress,
+		ValidatorDstAddress: msg.ValidatorDstAddress,
+		ValidatorSrcAddress: msg.ValidatorSrcAddress,
+	}
+	return &data
+}
+
+//dpos msg  data
 func NewDelegateData(msg stakingTypes.MsgDelegate) *DelegationData {
 	data := DelegationData{
 		Coin:             MustLedgerCoin2RealCoin(msg.Amount),
@@ -35,6 +52,7 @@ func NewDelegateData(msg stakingTypes.MsgDelegate) *DelegationData {
 	return &data
 }
 
+// msg  data
 func NewTransferData(msg MsgTransfer) *TransferData {
 	var realCoins RealCoins
 	util.Json.Unmarshal([]byte(msg.Coins), &realCoins)
@@ -46,21 +64,23 @@ func NewTransferData(msg MsgTransfer) *TransferData {
 	return &data
 }
 
+// msg  data
 func NewSpaceMinerData(msg MsgSpaceMiner) (*SpaceMinerData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return nil, err
 	}
 	awardAccount, err := sdk.AccAddressFromBech32(msg.AwardAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 2")
 		return nil, err
 	}
 	var realCoin RealCoin
 	err = util.Json.Unmarshal([]byte(msg.DeflationAmount), &realCoin)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("json.Unmarshal")
 		return nil, err
 	}
 	if err != nil {
@@ -69,20 +89,22 @@ func NewSpaceMinerData(msg MsgSpaceMiner) (*SpaceMinerData, error) {
 	data := SpaceMinerData{
 		DeflationAmount: realCoin,
 		Creator:         creator,
-		AwardAccount: awardAccount,
+		AwardAccount:    awardAccount,
 	}
 	return &data, nil
 }
 
+// msg  data
 func NewNftTransferData(msg MsgNftTransfer) (*NftTransferData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	from, err := sdk.AccAddressFromBech32(msg.From)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return nil, err
 	}
 	to, err := sdk.AccAddressFromBech32(msg.To)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 2")
 		return nil, err
 	}
 
@@ -94,24 +116,12 @@ func NewNftTransferData(msg MsgNftTransfer) (*NftTransferData, error) {
 	return &data, nil
 }
 
-func NewDeflationVoteData(msg MsgDeflationVote) (*DeflationVoteData, error) {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		logs.Error("format account error", err)
-		return nil, err
-	}
-
-	data := DeflationVoteData{
-		Option:  msg.Option,
-		Creator: creator,
-	}
-	return &data, nil
-}
-
+// msg  data
 func NewCopyrightPartyData(msg MsgRegisterCopyrightParty) (*CopyrightPartyData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32")
 		return nil, err
 	}
 	data := CopyrightPartyData{
@@ -123,35 +133,37 @@ func NewCopyrightPartyData(msg MsgRegisterCopyrightParty) (*CopyrightPartyData, 
 	return &data, nil
 }
 
+// msg  data
 func NewCopyrightData(msg MsgCreateCopyright) (*CopyrightData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32")
 		return nil, err
 	}
 	var files Files
 	err = util.Json.Unmarshal(msg.Files, &files)
 	if err != nil {
-		logs.Error("unmarshall error", err)
+		log.WithError(err).Error("json.Unmarshal 1")
 		return nil, err
 	}
 	var price RealCoin
 	err = util.Json.Unmarshal([]byte(msg.Price), &price)
 	if err != nil {
-		logs.Error("unmarshall error", err)
+		log.WithError(err).Error("json.Unmarshal 2")
 		return nil, err
 	}
 
 	var linkMap map[string]Link
 	err = util.Json.Unmarshal(msg.LinkMap, &linkMap)
 	if err != nil {
-		logs.Error("unmarshall error", err)
+		log.WithError(err).Error("json.Unmarshal 3")
 		return nil, err
 	}
 	var picLinkMap map[string]Link
 	err = util.Json.Unmarshal(msg.PicLinkMap, &picLinkMap)
 	if err != nil {
-		logs.Error("unmarshall error ", err)
+		log.WithError(err).Error("json.Unmarshal 4")
 		return nil, err
 	}
 	data := CopyrightData{
@@ -178,16 +190,18 @@ func NewCopyrightData(msg MsgCreateCopyright) (*CopyrightData, error) {
 	return &data, nil
 }
 
+// msg  data
 func NewEditorCopyrightData(msg MsgEditorCopyright) (*EditorCopyrightData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32")
 		return nil, err
 	}
 	var price RealCoin
 	err = util.Json.Unmarshal([]byte(msg.Price), &price)
 	if err != nil {
-		logs.Error("unmarshal error", err)
+		log.WithError(err).Error("json.Unmarshal")
 		return nil, err
 	}
 	data := EditorCopyrightData{
@@ -201,10 +215,12 @@ func NewEditorCopyrightData(msg MsgEditorCopyright) (*EditorCopyrightData, error
 	return &data, nil
 }
 
+// msg  data
 func NewDeleteCopyrightData(msg MsgDeleteCopyright) (*DeleteCopyrightData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32")
 		return nil, err
 	}
 	data := DeleteCopyrightData{
@@ -214,35 +230,17 @@ func NewDeleteCopyrightData(msg MsgDeleteCopyright) (*DeleteCopyrightData, error
 	return &data, nil
 }
 
-func NewBonusCopyrightData(msg MsgCopyrightBonus) (*CopyrightBonusData, error) {
-	creator, err := sdk.AccAddressFromBech32(msg.Creator)
-	if err != nil {
-		logs.Error("format account error", err)
-		return nil, err
-	}
-	dataHashAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
-	if err != nil {
-		logs.Error("format account error", err)
-		return nil, err
-	}
-	data := CopyrightBonusData{
-		DataHash:          msg.Datahash,
-		Downer:            creator,
-		HashAccount:       dataHashAccount,
-		OfferAccountShare: msg.OfferAccountShare,
-	}
-	return &data, nil
-}
-
+// msg  data
 func NewCopyrightComplainData(msg MsgCopyrightComplain) (*CopyrightComplainData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	complainAccount, err := sdk.AccAddressFromBech32(msg.ComplainAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return nil, err
 	}
 	accuseAccount, err := sdk.AccAddressFromBech32(msg.AccuseAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 2")
 		return nil, err
 	}
 	data := CopyrightComplainData{
@@ -260,11 +258,12 @@ func NewCopyrightComplainData(msg MsgCopyrightComplain) (*CopyrightComplainData,
 	return &data, nil
 }
 
+// msg  data
 func NewComplainResponseData(msg MsgComplainResponse) (*ComplainResponseData, error) {
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	accuseAccount, err := sdk.AccAddressFromBech32(msg.AccuseAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return nil, err
 	}
 	data := ComplainResponseData{
@@ -279,16 +278,17 @@ func NewComplainResponseData(msg MsgComplainResponse) (*ComplainResponseData, er
 	return &data, nil
 }
 
+// msg  data
 func NewComplainVoteData(msg MsgComplainVote) (*ComplainVoteData, error) {
-
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	voteAccount, err := sdk.AccAddressFromBech32(msg.VoteAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 2")
 		return nil, err
 	}
 	decPower, err := sdk.NewDecFromStr(msg.VotePower)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("NewDecFromStr")
 		return nil, err
 	}
 	data := ComplainVoteData{
@@ -300,33 +300,35 @@ func NewComplainVoteData(msg MsgComplainVote) (*ComplainVoteData, error) {
 	return &data, nil
 }
 
+// msg  data
 func NewMortgageData(msg MsgMortgage) (*MortgageData, error) {
+	log := core.BuildLog(core.GetFuncName(), core.LmChainType)
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 1")
 		return nil, err
 	}
 	mortgageAccount, err := sdk.AccAddressFromBech32(msg.MortageAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 2")
 		return nil, err
 	}
 	dataAccount, err := sdk.AccAddressFromBech32(msg.DataHashAccount)
 	if err != nil {
-		logs.Error("format account error", err)
+		log.WithError(err).Error("AccAddressFromBech32 3")
 		return nil, err
 	}
 
 	var mortgageAmount RealCoin
 	err = util.Json.Unmarshal([]byte(msg.MortgageAmount), &mortgageAmount)
 	if err != nil {
-		logs.Error("unmarshal error", err)
+		log.WithError(err).Error("json.Unmarshal")
 		return nil, err
 	}
 	var copyrightPrice RealCoin
 	err = util.Json.Unmarshal([]byte(msg.CopyrightPrice), &copyrightPrice)
 	if err != nil {
-		logs.Error("unmarshal error", err)
+		log.WithError(err).Error("json.Unmarshal")
 		return nil, err
 	}
 	data := MortgageData{
@@ -342,6 +344,7 @@ func NewMortgageData(msg MsgMortgage) (*MortgageData, error) {
 	return &data, nil
 }
 
+// msg  data
 func NewCopyrightVoteData(msg MsgVoteCopyright) (*CopyrightVoteData, error) {
 	data := CopyrightVoteData{
 		Address:  msg.Address,

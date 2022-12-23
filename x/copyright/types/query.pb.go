@@ -6,8 +6,8 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	grpc1 "github.com/gogo/protobuf/grpc"
+	proto "github.com/golang/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	math "math"
@@ -47,16 +47,16 @@ var _ grpc.ClientConn
 const _ = grpc.SupportPackageIsVersion4
 
 // QueryClient is the client API for Query service.
-//
+
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
 }
 
 type queryClient struct {
-	cc *grpc.ClientConn
+	cc grpc1.ClientConn
 }
 
-func NewQueryClient(cc *grpc.ClientConn) QueryClient {
+func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
